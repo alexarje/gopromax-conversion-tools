@@ -1,0 +1,142 @@
+
+FFMPEG Filtergraph explained, for those scratching their heads:
+
+We must re-arrange the 2 video streams in the .360 file that are in GoPro's custom "format" into
+a Equi-Angular Cubemap representation, and finally convert that to Equirectangular projection.
+
+GoPro format, approximately (two 4096x1344 streams):
+Stream 0 (front camera)
++--------------------------------------------------------+
+|             |o|  |                  |  |o|             |
+|             |v|  |                  |  |v|             |
+|             |e|  |                  |  |e|             |
+|    LEFT     |r|  |      CENTER      |  |r|   RIGHT     |
+|             |l|  |                  |  |l|             |
+|             |a|  |                  |  |a|             |
+|             |p|  |                  |  |p|             |
++--------------------------------------------------------+
+Stream 5 (rear camera)
++--------------------------------------------------------+
+|             |o|  |                  |  |o|             |
+|    B        |v|  |        B         |  |v|     T       |
+|    O        |e|  |        A         |  |e|     O       |
+|    T        |r|  |        C         |  |r|     P       |
+|    T        |l|  |        K         |  |l|             |
+|    O        |a|  |                  |  |a|             |
+|    M        |p|  |                  |  |p|             |
++--------------------------------------------------------+
+
+Essentially almost the same as Equi-Angular Cubemap, split into two streams, except with the
+overlapping regions. It's explained here: https://gopro.com/en/se/news/max-tech-specs-stitching-resolution
+Without the overlaps, the process would have been a simple vertical stacking.
+Because of the overlaps, we need to do blending of the overlapping regions, cropping 
+and then re-arranging the pieces.
+
+Our goal is to perform the blending, removing the overlaps.
+
+Filters:
+geq: https://ffmpeg.org/ffmpeg-filters.html#geq
+crop: https://ffmpeg.org/ffmpeg-filters.html#crop
+hstack: https://ffmpeg.org/ffmpeg-filters.html#hstack-1
+vstack: https://ffmpeg.org/ffmpeg-filters.html#vstack-1
+format: https://ffmpeg.org/ffmpeg-filters.html#format-1
+v360: https://ffmpeg.org/ffmpeg-filters.html#v360
+
+The procedure, explained in full length:
+
+input stream 0
+- crop to size (624, 1344) at (0, 0)
+- format as yuvj420p
+- save as [LEFTFRAME_left_slice]
+
+input stream 0
+- crop to size (128, 1344) at (624,0)
+- apply generic equation (blending)
+- crop to size (64, 1344) at (0, 0)
+- format as yuvj420p
+- scale to (96, 1344)
+- save as [LEFTFRAME_overlap_slice]
+
+input stream 0
+- crop to size (624, 1344) at (752, 0)
+- format as yuvj420p
+- save as [LEFTFRAME_right_slice]
+
+inputs [LEFTFRAME_left_slice], [LEFTFRAME_overlap_slice]
+- horizontally stack
+- save as [LEFTFRAME_left_and_overlap_joined], size (720, 1344)
+
+inputs [LEFTFRAME_left_and_overlap_joined], [LEFTFRAME_right_slice]
+- horizontally stack
+- save as [LEFTFRAME_completed], size (1344, 1344)
+
+>>> This is the ready LEFT frame
+
+
+input stream 0
+- crop to size (1344, 1344) at (1376, 0)
+- save as [CENTERFRAME_completed]
+
+>>> This is the ready CENTER frame
+
+
+input stream 0
+- crop to size (624, 1344) at (2720, 0)
+- format as yuvj420p
+- save as [RIGHTFRAME_left_slice]
+
+input stream 0
+- crop to size (128, 1344) at (3344, 0)
+- format as yuvj420p
+- apply generic equation (blending)
+- crop to size (64, 1344) at (0, 0)
+- format as yuvj420p
+- scale to (96, 1344)
+- save as [RIGHTFRAME_overlap_slice]
+
+input stream 0
+- crop to size (624, 1344) at (3472, 0)
+- format as yuvj420p
+- save as [RIGHTFRAME_right_slice]
+
+inputs [RIGHTFRAME_left_slice], [RIGHTFRAME_overlap_slice]
+- horizontally stack
+- save as [RIGHTFRAME_left_and_overlap_joined], size (720, 1344)
+
+inputs [RIGHTFRAME_left_and_overlap_joined], [RIGHTFRAME_right_slice]
+- horizontally stack
+- save as [RIGHTFRAME_completed], size (1344, 1344)
+
+>>> This is the ready RIGHT frame
+
+
+inputs [LEFTFRAME_completed], [CENTERFRAME_completed]
+- horizontally stack
+- save as [LEFT_CENTER_frames_joined], size (2688, 1344)
+
+inputs [LEFT_CENTER_frames_joined], [RIGHTFRAME_completed]
+- horizontally stack
+- save as [LEFT_CENTER_RIGHT_completed], size (4032, 1344)
+
+>>> This is the ready Stream 0 (front camera) full frame (LEFT + CENTER + RIGHT)
+
+...and we do the exact same steps to the Stream 5 to form the rear camera block (BOTTOM + BACK + TOP).
+
+Finally, we combine the full frames:
+
+inputs [LEFT_CENTER_RIGHT_completed], [BOTTOM_BACK_TOP_completed]
+- vertically stack
+- save as [FULL_EAC_FRAME], size (4032, 2688)
+
+inputs [FULL_EAC_FRAME]
+- v360 project from eac (equi-angular) to e (equirectangular)
+  - using cubic interpolation
+  - use selected roll/pitch/yaw
+- crop to size (4032, 2388)
+- save as [OUTPUT_FRAME]
+
+>>> END
+
+
+# TODO why crop to 2388??? Why not use 2688???
+# Does the v360 introduce black borders?
