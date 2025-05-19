@@ -1,0 +1,10 @@
+using System.Threading.Tasks;
+using VideoConversionApp.Models;
+
+namespace VideoConversionApp.Abstractions;
+
+public interface IMediaInfoService
+{
+    Task<MediaInfo> GetMediaInfoAsync(string filename);
+    
+}

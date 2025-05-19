@@ -1,0 +1,76 @@
+<Window xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
+  xmlns:v="clr-namespace:VideoConversionApp.Views"
+  mc:Ignorable="d" d:DesignWidth="1600" d:DesignHeight="800"
+  x:Class="VideoConversionApp.Views.MainWindow"
+  x:DataType="vm:MainViewModel"
+  Title="VideoConversionApp"
+  Name="AppMainWindow"
+  Icon="/Images/360-icon.png">
+
+  <Design.DataContext>
+    <vm:MainViewModel>
+      <x:Arguments>
+        <x:Null></x:Null>
+      </x:Arguments>
+    </vm:MainViewModel>
+  </Design.DataContext>
+
+  <Window.Styles>
+
+  </Window.Styles>
+
+  <StackPanel Orientation="Vertical">
+
+    <Grid ColumnDefinitions="3*, 9*, 3*" RowDefinitions="*, 60" Name="MainGrid"
+      Height="{Binding ElementName=AppMainWindow, Path=Height}"
+      VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+ 
+      <!-- LEFT -->
+      <v:MediaSelectionView Grid.Row="0" Grid.Column="0"
+        DataContext="{Binding MediaSelectionViewModel}" />
+
+      <!-- MIDDLE -->
+      <v:ConversionPreviewView Grid.Row="0" Grid.Column="1" />
+      
+      <!-- RIGHT -->
+      <v:ConversionSettingsView Grid.Row="0" Grid.Column="2" />
+
+      <!-- BOTTOM BAR -->
+      <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Height="60">
+        
+        <Border
+          BorderBrush="Black"
+          BorderThickness="1 0 1 1">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <TabStrip Margin="0">
+              <TabStripItem Width="180" Margin="0" Height="60">
+                <TabStripItem.Content>
+                  <StackPanel Orientation="Vertical" Margin="0" Background="Transparent">
+                    <Image Source="../Images/filmstrip-stack.png" Height="20" Margin="0, 10, 0, 2"
+                      RenderOptions.BitmapInterpolationMode="HighQuality"></Image>
+                    <TextBlock Margin="4" HorizontalAlignment="Center">Media</TextBlock>
+                  </StackPanel>
+                </TabStripItem.Content>
+              </TabStripItem>
+              <TabStripItem Width="180" Margin="0" Height="60">
+                <TabStripItem.Content>
+                  <StackPanel Orientation="Vertical" Margin="0" Background="Transparent">
+                    <Image Source="../Images/filmstrip-stack.png" Height="20" Margin="0, 10, 0, 2"
+                      RenderOptions.BitmapInterpolationMode="HighQuality"></Image>
+                    <TextBlock Margin="4" HorizontalAlignment="Center">Render</TextBlock>
+                  </StackPanel>
+                </TabStripItem.Content>
+              </TabStripItem>
+            </TabStrip>
+          </StackPanel>
+        </Border>
+      </DockPanel>
+      
+    </Grid>
+  </StackPanel>
+
+</Window>

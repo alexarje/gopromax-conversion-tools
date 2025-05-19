@@ -1,0 +1,47 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Design.PreviewWith>
+    <Border Padding="20">
+      <StackPanel Orientation="Horizontal">
+        <Border Classes="paneHeading" Margin="20">
+          <TextBlock VerticalAlignment="Center">Here be dragons</TextBlock>
+        </Border>
+        <Border Padding="24" Classes="paneBody pbLB" Margin="20">
+          <TextBlock>Here be dragons</TextBlock>
+        </Border>
+        <Border Padding="24" Classes="paneBody pbLBR" Margin="20">
+          <TextBlock>Here be dragons</TextBlock>
+        </Border>
+        <Border Padding="24" Margin="20">
+          <TextBlock>Here be dragons</TextBlock>
+        </Border>
+        <Border Padding="0" Classes="paneHeading pbLTRB" Margin="20">
+          <TextBlock>Here be dragons</TextBlock>
+        </Border>
+      </StackPanel>
+    </Border>
+  </Design.PreviewWith>
+  
+  <Style Selector="Border.paneHeading">
+    <Setter Property="BorderBrush" Value="Black"></Setter>
+    <Setter Property="BorderThickness" Value="1 1 0 1"></Setter>
+    <Setter Property="Background" Value="#222223"></Setter>
+    <Setter Property="Height" Value="40"></Setter>
+  </Style>
+  
+  <Style Selector="Border.paneBody">
+    <Setter Property="BorderBrush" Value="Black"></Setter>
+  </Style>
+  
+  <Style Selector="Border.pbLB">
+    <Setter Property="BorderThickness" Value="1 0 0 1"></Setter>
+  </Style>
+  <Style Selector="Border.pbLBR">
+    <Setter Property="BorderThickness" Value="1 0 1 1"></Setter>
+  </Style>
+  <Style Selector="Border.pbLTRB">
+    <Setter Property="BorderThickness" Value="1 1 1 1"></Setter>
+  </Style>
+
+  <!-- Add Styles Here -->
+</Styles>
