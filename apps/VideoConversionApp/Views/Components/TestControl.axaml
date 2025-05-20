@@ -6,23 +6,9 @@
              x:Class="VideoConversionApp.Views.TestControl">
 
   <Grid ColumnDefinitions="*,3*,*">
-    <TabStrip Grid.Column="1">
-      <TabStripItem>
-        <TabStripItem.Content>
-          <StackPanel Orientation="Vertical">
-            <Image Source="../Assets/filmstrip-stack.png" Width="100"></Image>
-            <TextBlock>Hello kitty</TextBlock>  
-          </StackPanel>
-        </TabStripItem.Content>
-      </TabStripItem>
-      <TabStripItem>
-        <TabStripItem.Content>
-          <StackPanel Orientation="Vertical">
-            <Image Source="../Assets/filmstrip-stack.png" Width="100"></Image>
-            <TextBlock>Hello kitty</TextBlock>  
-          </StackPanel>
-        </TabStripItem.Content>
-      </TabStripItem>
-    </TabStrip>
+    <TabControl>
+      <TabItem Header="HEllo"></TabItem>
+      <TabItem Header="ssg"></TabItem>
+    </TabControl>
   </Grid>
 </UserControl>

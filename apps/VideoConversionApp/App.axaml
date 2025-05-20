@@ -12,7 +12,7 @@
       <ResourceDictionary>
         <ResourceDictionary.MergedDictionaries>
           <MergeResourceInclude Source="./Resources/StreamingIcons.axaml"></MergeResourceInclude>
-          <MergeResourceInclude Source="./Resources/MainNavTabStripItem.axaml"></MergeResourceInclude>
+          <MergeResourceInclude Source="./Resources/MainNavBarTabItemStyling.axaml"></MergeResourceInclude>
         </ResourceDictionary.MergedDictionaries>
       </ResourceDictionary>
     </Application.Resources>
