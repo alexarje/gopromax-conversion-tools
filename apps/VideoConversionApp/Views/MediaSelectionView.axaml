@@ -4,10 +4,10 @@
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
   xmlns:components="clr-namespace:VideoConversionApp.Views.Components"
-  mc:Ignorable="d" d:DesignWidth="350" d:DesignHeight="450"
+  mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
   x:Class="VideoConversionApp.Views.MediaSelectionView"
   x:DataType="vm:MediaSelectionViewModel">
-
+  
   <Design.DataContext>
     <vm:MediaSelectionViewModel>
       <x:Arguments>
@@ -26,7 +26,7 @@
             <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch">Media</TextBlock>
           </Border>
           <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
-            Command="{Binding AddFilesCommand}">
+            Command="{Binding AddFilesCommand}" ToolTip.Tip="Add files to media pool">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="8 0 0 0">
                 <PathIcon Data="{StaticResource folder_open_regular}"></PathIcon>
@@ -35,7 +35,7 @@
             </Button.Content>
           </Button>
           <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
-            Command="{Binding SelectAllFilesCommand}">
+            Command="{Binding SelectAllFilesCommand}" ToolTip.Tip="Select all for rendering">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="0 0 0 0">
                 <PathIcon Data="{StaticResource select_all_regular}"></PathIcon>
@@ -43,7 +43,7 @@
             </Button.Content>
           </Button>
           <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
-            Command="{Binding UnselectAllFilesCommand}">
+            Command="{Binding UnselectAllFilesCommand}" ToolTip.Tip="Unselect all for rendering">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="0 0 0 0">
                 <PathIcon Data="{StaticResource select_all_off_regular}"></PathIcon>
@@ -51,13 +51,23 @@
             </Button.Content>
           </Button>
           <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
-            Command="{Binding ClearAllFilesCommand}">
+            Command="{Binding ClearAllFilesCommand}" ToolTip.Tip="Clear all media from media pool">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="0 0 0 0">
                 <PathIcon Data="{StaticResource delete_regular}"></PathIcon>
               </StackPanel>
             </Button.Content>
           </Button>
+          <ComboBox Width="80" Margin="4" Name="SortComboBox" SelectedIndex="0" ToolTip.Tip="Sort by">
+            <ComboBoxItem>Date</ComboBoxItem> 
+            <ComboBoxItem>Filename</ComboBoxItem>
+            <ComboBoxItem>Duration</ComboBoxItem>
+          </ComboBox>
+          <ToggleButton Background="Transparent" Margin="4" ToolTip.Tip="Sort descending">
+            <ToggleButton.Content>
+              <PathIcon Data="{StaticResource  text_sort_descending_regular}"></PathIcon>  
+            </ToggleButton.Content>
+          </ToggleButton> 
         </StackPanel>
       </Panel>
 

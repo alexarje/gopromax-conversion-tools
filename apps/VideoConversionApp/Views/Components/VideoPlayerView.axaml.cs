@@ -11,24 +11,27 @@ public partial class VideoPlayerView : UserControl
     public VideoPlayerView()
     {
         InitializeComponent();
+        DataContext = new VideoPlayerViewModel(); // TODO temporary
+        ControlsPanel.IsVisible = true;
     }
     
     private void OnDataContextChanged(object sender, EventArgs e)
     {
+        
         if (DataContext is VideoPlayerViewModel vm)
         {
-            vm.Play();
+            //vm.Play();
         }
     }
 
     private void VideoViewOnPointerEntered(object sender, PointerEventArgs e)
     {
-        ControlsPanel.IsVisible = true;
+        //ControlsPanel.IsVisible = true;
     }
 
     private void VideoViewOnPointerExited(object sender, PointerEventArgs e)
     {
-        ControlsPanel.IsVisible = false;
+        //ControlsPanel.IsVisible = false;
     }
 
 }
