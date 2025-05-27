@@ -10,44 +10,52 @@
   DataContextChanged="OnDataContextChanged"
   x:DataType="components:VideoPlayerViewModel">
 
-  <UserControl.Styles>
-    <Style Selector="Button.video">
-      <Setter Property="Background" Value="Transparent"></Setter>
-      <Setter Property="BorderBrush" Value="Transparent"></Setter>
-    </Style>
-    <Style Selector="Button.video:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#444444"></Setter>
-      <Setter Property="BorderBrush" Value="Transparent"></Setter>
-    </Style>
-  </UserControl.Styles>
-
-
   <Design.DataContext>
     <components:VideoPlayerViewModel />
   </Design.DataContext>
 
-  <Border>
-    <vlca:VideoView Grid.Row="1" MediaPlayer="{Binding MediaPlayer}"
+  <Panel>
+    <vlca:VideoView Name="Player"
       HorizontalAlignment="Stretch"
       VerticalAlignment="Stretch"
-      PointerEntered="VideoViewOnPointerEntered"
-      PointerExited="VideoViewOnPointerExited">
+      IsHitTestVisible="False"
+      PointerPressed="VideoViewOnPointerPressed"
+      PointerReleased="VideoViewOnPointerReleased"
+      >
       
-      <Panel Name="ControlsPanel" Background="Black">
+      <!-- Must be placed inside VideoView, but does not render in designer while inside it, so must be placed outside while editing -->
+      <Panel Name="ControlsPanel" PointerMoved="ControlsPanel_OnPointerMoved" Background="Transparent">
         <StackPanel Orientation="Vertical" VerticalAlignment="Bottom" Background="Transparent">
           <Slider></Slider>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <Button Classes="video" Height="32">
-              <Image Source="../../Images/video-stop.png"></Image>
+          <Panel Background="rgba(100,100,100,150)">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button Name="StopButton" Classes="video-control-button" Height="32" Click="StopClicked">
+                <Panel>
+                  <PathIcon Data="{DynamicResource stop_regular}"></PathIcon>
+                </Panel>
+              </Button>
+              <ToggleButton Name="PlayPauseButton" Classes="video-control-button" Height="32" IsCheckedChanged="OnPlayPauseToggled">
+                <Panel>
+                  <PathIcon Classes="video-play-icon" Data="{DynamicResource play_regular}"></PathIcon>
+                  <PathIcon Classes="video-pause-icon" Data="{DynamicResource pause_regular}"></PathIcon>
+                </Panel>
+              </ToggleButton>
+            </StackPanel>
+            <Button Name="ResetRotationButton" Classes="video-control-button" Height="32" Click="ResetRotationClicked" HorizontalAlignment="Right">
+              <StackPanel Orientation="Horizontal">
+                <PathIcon Data="{DynamicResource video_switch_regular}" VerticalAlignment="Center" Margin="0 4 0 0"></PathIcon>
+                <TextBlock Margin="8 0 0 0" VerticalAlignment="Center">Reset</TextBlock>
+              </StackPanel>
             </Button>
-            <Button Classes="video" Height="32">
-              <Image Source="../../Images/video-play.png"></Image>
-            </Button>
-          </StackPanel>
+          </Panel>
         </StackPanel>
       </Panel>
       
     </vlca:VideoView>
-  </Border>
+    
+    
+    
+    
+  </Panel>
 
 </UserControl>

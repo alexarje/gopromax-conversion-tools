@@ -7,27 +7,27 @@
   x:Class="VideoConversionApp.Views.ConversionPreviewView">
 
   <UserControl.Styles>
-    <Style Selector="Button.frameNextPrevButton">
+    <Style Selector="Button.frame-next-prev-button">
       <Setter Property="Background" Value="rgba(0,0,0,200)"></Setter>
       <Setter Property="BorderThickness" Value="0"></Setter>
     </Style>
-    <Style Selector="Button.frameNextPrevButton:pointerover">
+    <Style Selector="Button.frame-next-prev-button:pointerover">
       <Setter Property="Background" Value="rgba(200,200,200,200)"></Setter>
       <Setter Property="BorderThickness" Value="0"></Setter> 
     </Style>
-    <Style Selector="Button.frameNextPrevButton:pressed /template/ ContentPresenter">
+    <Style Selector="Button.frame-next-prev-button:pressed /template/ ContentPresenter">
       <Setter Property="Background" Value="rgba(240,240,240,200)"></Setter> 
     </Style>
   </UserControl.Styles>
 
   <DockPanel>
-    <Border Classes="paneHeading" DockPanel.Dock="Top">
+    <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>
         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
           FontSize="16" FontWeight="Bold">Conversion Preview</TextBlock>
       </Panel>
     </Border>
-    <Border Classes="paneBody pbLB">
+    <Border Classes="pane-body pb-lb">
       <Grid ColumnDefinitions="*,*" RowDefinitions="Auto, Auto, Auto" >
         
         <TextBlock Grid.Row="0" Grid.Column="0"
@@ -44,10 +44,10 @@
 
         <Panel Grid.Row="1" Grid.Column="0" Margin="10 0 10 0">
           <Image Source="../Images/sample-thn.jpg" MinHeight="300" Stretch="Uniform" Name="SnapshotFrameImage" />
-          <Button Classes="frameNextPrevButton" Width="40" Height="120" HorizontalAlignment="Left">
+          <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Left">
             <PathIcon Data="{StaticResource chevron_left_regular}" />
           </Button>
-          <Button Classes="frameNextPrevButton" Width="40" Height="120" HorizontalAlignment="Right">
+          <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Right">
             <PathIcon Data="{StaticResource chevron_right_regular}" />
           </Button>
         </Panel>
@@ -57,7 +57,7 @@
         
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="10 0 10 0">
           <Grid ColumnDefinitions="Auto, *" Margin="0 4 0 0">
-            <ToggleButton Grid.Column="0" ToolTip.Tip="Auto-render on changes" Height="30">
+            <ToggleButton Classes="basic-transparent" Grid.Column="0" ToolTip.Tip="Auto-render on changes" Height="30">
               <ToggleButton.Content>
                 <PathIcon Data="{DynamicResource arrow_clockwise_regular}"></PathIcon>
               </ToggleButton.Content>

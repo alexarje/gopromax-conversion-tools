@@ -13,6 +13,7 @@
         <ResourceDictionary.MergedDictionaries>
           <MergeResourceInclude Source="./Resources/StreamingIcons.axaml"></MergeResourceInclude>
           <MergeResourceInclude Source="./Resources/MainNavBarTabItemStyling.axaml"></MergeResourceInclude>
+          <MergeResourceInclude Source="./Resources/StyledSlider.axaml"></MergeResourceInclude>
         </ResourceDictionary.MergedDictionaries>
       </ResourceDictionary>
     </Application.Resources>

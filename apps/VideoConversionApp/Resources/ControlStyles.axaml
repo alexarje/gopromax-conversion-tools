@@ -3,45 +3,84 @@
   <Design.PreviewWith>
     <Border Padding="20">
       <StackPanel Orientation="Horizontal">
-        <Border Classes="paneHeading" Margin="20">
+        <Border Classes="pane-heading" Margin="20">
           <TextBlock VerticalAlignment="Center">Here be dragons</TextBlock>
         </Border>
-        <Border Padding="24" Classes="paneBody pbLB" Margin="20">
+        <Border Padding="24" Classes="pane-body pb-lb" Margin="20">
           <TextBlock>Here be dragons</TextBlock>
         </Border>
-        <Border Padding="24" Classes="paneBody pbLBR" Margin="20">
+        <Border Padding="24" Classes="pane-body pb-lbr" Margin="20">
           <TextBlock>Here be dragons</TextBlock>
         </Border>
         <Border Padding="24" Margin="20">
           <TextBlock>Here be dragons</TextBlock>
         </Border>
-        <Border Padding="0" Classes="paneHeading pbLTRB" Margin="20">
+        <Border Padding="0" Classes="pane-heading pb-ltrb" Margin="20">
           <TextBlock>Here be dragons</TextBlock>
         </Border>
+        <Button Classes="basic-transparent">Text</Button>
       </StackPanel>
     </Border>
   </Design.PreviewWith>
   
-  <Style Selector="Border.paneHeading">
+  <Style Selector="Border.pane-heading">
     <Setter Property="BorderBrush" Value="Black"></Setter>
     <Setter Property="BorderThickness" Value="1 1 0 1"></Setter>
     <Setter Property="Background" Value="#222223"></Setter>
     <Setter Property="Height" Value="40"></Setter>
   </Style>
   
-  <Style Selector="Border.paneBody">
+  <Style Selector="Border.pane-body">
     <Setter Property="BorderBrush" Value="Black"></Setter>
   </Style>
   
-  <Style Selector="Border.pbLB">
+  <Style Selector="Button.basic-transparent, ToggleButton.basic-transparent">
+    <Setter Property="Background" Value="Transparent"></Setter>
+    <Setter Property="BorderThickness" Value="0"></Setter>
+  </Style>
+  <Style Selector="Button.basic-transparent:pointerover, ToggleButton.basic-transparent:pointerover">
+    <Setter Property="Background" Value="#555555"></Setter>
+  </Style>
+  
+  
+  <Style Selector="Border.pb-lb">
     <Setter Property="BorderThickness" Value="1 0 0 1"></Setter>
   </Style>
-  <Style Selector="Border.pbLBR">
+  <Style Selector="Border.pb-lbr">
     <Setter Property="BorderThickness" Value="1 0 1 1"></Setter>
   </Style>
-  <Style Selector="Border.pbLTRB">
+  <Style Selector="Border.pb-ltrb">
     <Setter Property="BorderThickness" Value="1 1 1 1"></Setter>
   </Style>
 
-  <!-- Add Styles Here -->
+
+  <Style Selector="Button.video-control-button, ToggleButton.video-control-button">
+    <!-- <Setter Property="Background" Value="rgba(100,100,100,150)"></Setter> -->
+    <Setter Property="Background" Value="Transparent"></Setter>
+    <Setter Property="BorderThickness" Value="0"></Setter>
+  </Style>
+  <Style Selector="Button.video-control-button:pointerover /template/ ContentPresenter, ToggleButton.video-control-button:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#555555"></Setter>
+  </Style>
+  <Style Selector="ToggleButton.video-control-button:checked /template/ ContentPresenter">
+    <!-- <Setter Property="Background" Value="rgba(100,100,100,150)"></Setter> -->
+    <Setter Property="Background" Value="Transparent"></Setter>
+  </Style>
+  <Style Selector="ToggleButton.video-control-button:checked:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#555555"></Setter>
+  </Style>
+  
+  <Style Selector="ToggleButton.video-control-button PathIcon.video-play-icon">
+    <Setter Property="IsVisible" Value="True"></Setter>
+  </Style>
+  <Style Selector="ToggleButton.video-control-button:checked PathIcon.video-play-icon">
+    <Setter Property="IsVisible" Value="False"></Setter>
+  </Style>
+  <Style Selector="ToggleButton.video-control-button PathIcon.video-pause-icon">
+    <Setter Property="IsVisible" Value="False"></Setter>
+  </Style>
+  <Style Selector="ToggleButton.video-control-button:checked PathIcon.video-pause-icon">
+    <Setter Property="IsVisible" Value="True"></Setter>
+  </Style>
+  
 </Styles>

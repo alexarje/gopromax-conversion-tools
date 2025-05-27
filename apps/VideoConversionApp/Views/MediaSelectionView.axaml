@@ -19,13 +19,13 @@
   </Design.DataContext>
 
   <DockPanel>
-    <Border Classes="paneHeading" DockPanel.Dock="Top">
+    <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
           <Border BorderThickness="0 0 1 0" BorderBrush="Gray" VerticalAlignment="Center">
             <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch">Media</TextBlock>
           </Border>
-          <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
+          <Button Classes="basic-transparent"
             Command="{Binding AddFilesCommand}" ToolTip.Tip="Add files to media pool">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="8 0 0 0">
@@ -34,7 +34,7 @@
               </StackPanel>
             </Button.Content>
           </Button>
-          <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
+          <Button Classes="basic-transparent"
             Command="{Binding SelectAllFilesCommand}" ToolTip.Tip="Select all for rendering">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="0 0 0 0">
@@ -42,7 +42,7 @@
               </StackPanel>
             </Button.Content>
           </Button>
-          <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
+          <Button Classes="basic-transparent"
             Command="{Binding UnselectAllFilesCommand}" ToolTip.Tip="Unselect all for rendering">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="0 0 0 0">
@@ -50,7 +50,7 @@
               </StackPanel>
             </Button.Content>
           </Button>
-          <Button Classes="paneHeading" Background="Transparent" BorderThickness="0"
+          <Button Classes="basic-transparent"
             Command="{Binding ClearAllFilesCommand}" ToolTip.Tip="Clear all media from media pool">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="0 0 0 0">
@@ -63,7 +63,7 @@
             <ComboBoxItem>Filename</ComboBoxItem>
             <ComboBoxItem>Duration</ComboBoxItem>
           </ComboBox>
-          <ToggleButton Background="Transparent" Margin="4" ToolTip.Tip="Sort descending">
+          <ToggleButton Classes="basic-transparent" Margin="4" ToolTip.Tip="Sort descending">
             <ToggleButton.Content>
               <PathIcon Data="{StaticResource  text_sort_descending_regular}"></PathIcon>  
             </ToggleButton.Content>
@@ -72,7 +72,7 @@
       </Panel>
 
     </Border>
-    <Border Classes="paneBody pbLB">
+    <Border Classes="pane-body pb-lb">
       <ListBox ItemsSource="{Binding VideoList}" BorderBrush="Transparent">
         <ListBox.ItemTemplate>
           <DataTemplate>

@@ -6,12 +6,12 @@
   x:Class="VideoConversionApp.Views.ConversionSettingsView">
 
   <DockPanel>
-    <Border Classes="paneHeading pbLTRB" DockPanel.Dock="Top">
+    <Border Classes="pane-heading pb-ltrb" DockPanel.Dock="Top">
       <Panel>
         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">Conversion Settings</TextBlock>
       </Panel>
     </Border>
-    <Border Classes="paneBody pbLBR">
+    <Border Classes="pane-body pb-lbr">
       <StackPanel></StackPanel>
     </Border>
   </DockPanel>
