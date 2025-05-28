@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -19,16 +20,28 @@ public partial class VideoPlayerView : UserControl, IDisposable
     private float _fov = 80;
     
     private readonly LibVLC _libVlc = new LibVLC();
-    private MediaPlayer _mediaPlayer;
+    private readonly MediaPlayer _mediaPlayer;
 
     private VideoPlayerViewModel? ViewModel => DataContext as VideoPlayerViewModel;
     
     public VideoPlayerView()
     {
         InitializeComponent();
+        
+        // Workaround: when the Tab is changed, the player is detached from the visual tree and does not run Attach()
+        // internal method which it should, in order to anchor it to the window. If we don't do this, it will open
+        // up as a popup after tab change.
+        Player.AttachedToVisualTree += PlayerOnAttachedToVisualTree;
+        
         _mediaPlayer = new MediaPlayer(_libVlc);
         Player.MediaPlayer = _mediaPlayer;
         DataContext = new VideoPlayerViewModel(); // TODO temporary
+    }
+
+    private void PlayerOnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        var attachMethod = Player.GetType().GetMethod("Attach", BindingFlags.Instance | BindingFlags.NonPublic);
+        attachMethod!.Invoke(Player, []);
     }
     
     private void OnDataContextChanged(object sender, EventArgs e)
@@ -119,6 +132,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
             Player.MediaPlayer.Pause();
         else if (!Player.MediaPlayer.IsPlaying && newCheckedState == true)
             Player.MediaPlayer.Play();
+
     }
 
     public void Dispose()
