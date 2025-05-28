@@ -36,30 +36,26 @@ public class MediaInfoService : IMediaInfoService
 
         var createTimeDefault = File.GetCreationTime(filename);
         
-        var mediaInfo = new MediaInfo(filename);
-        mediaInfo.SizeBytes = new FileInfo(filename).Length;
+        //var mediaInfo = new MediaInfo(filename);
+        var sizeBytes = new FileInfo(filename).Length;
         
         using var media = new Media(_libVlc, filename);
         await media.Parse(MediaParseOptions.ParseLocal, 2000);
 
         if (media.Duration < 0)
-        {
-            mediaInfo.IsValidVideo = mediaInfo.IsGoProMaxFormat = false;
-            mediaInfo.DurationSeconds = 0;
-            return mediaInfo;
-        }
+            return new MediaInfo(filename, false, false, 0, 
+                createTimeDefault, sizeBytes, ["Media duration was reported as < 0"]);
 
         long seconds = media.Duration / 1000;
-        mediaInfo.DurationSeconds = seconds;
-        mediaInfo.IsValidVideo = true;
         var validationIssues = new List<string>(); 
-        mediaInfo.IsGoProMaxFormat = ValidateGoProMaxVideo(media, filename, validationIssues);
+        var isGoProMaxFormat = ValidateGoProMaxVideo(media, filename, validationIssues);
         
         var s = media.Meta(MetadataType.Date) ?? createTimeDefault.ToString(CultureInfo.CurrentCulture);
-        mediaInfo.CreatedDateTime = DateTime.Parse(s);
+        var createdDateTime = DateTime.Parse(s);
         
-        return mediaInfo;
-
+        return new MediaInfo(filename, true, isGoProMaxFormat, seconds, createdDateTime, 
+            sizeBytes, validationIssues.ToArray());
+        
     }
 
     /// <summary>

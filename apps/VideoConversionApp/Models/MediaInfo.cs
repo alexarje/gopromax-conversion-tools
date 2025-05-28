@@ -5,13 +5,35 @@ namespace VideoConversionApp.Models;
 /// <summary>
 /// Describes the media (one video), very basic stuff.
 /// </summary>
-public class MediaInfo(string filename)
+public class MediaInfo
 {
-    public string Filename { get; set; } = filename;
-    public bool IsValidVideo { get; set; }
-    public bool IsGoProMaxFormat { get; set; }
-    public long DurationSeconds { get; set; }
-    public DateTime CreatedDateTime { get; set; }
-    public long SizeBytes { get; set; }
-    public string[]? ValidationIssues { get; set; }
+    /// <summary>
+    /// Describes the media (one video), very basic stuff.
+    /// </summary>
+    public MediaInfo(string filename, bool isValidVideo, bool isGoProMaxFormat, 
+        long durationSeconds, DateTime createdDateTime, long sizeBytes, string[]? validationIssues)
+    {
+        Filename = filename;
+        IsValidVideo = isValidVideo;
+        IsGoProMaxFormat = isGoProMaxFormat;
+        DurationSeconds = durationSeconds;
+        CreatedDateTime = createdDateTime;
+        SizeBytes = sizeBytes;
+        ValidationIssues = validationIssues;
+    }
+
+    public MediaInfo(string filename, bool isValidVideo, bool isGoProMaxFormat)
+    {
+        Filename = filename;
+        IsValidVideo = isValidVideo;
+        IsGoProMaxFormat = isGoProMaxFormat;
+    }
+    
+    public string Filename { get; }
+    public bool IsValidVideo { get; }
+    public bool IsGoProMaxFormat { get; }
+    public long DurationSeconds { get; }
+    public DateTime CreatedDateTime { get; }
+    public long SizeBytes { get; }
+    public string[]? ValidationIssues { get; }
 }

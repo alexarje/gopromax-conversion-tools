@@ -7,6 +7,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
 
 namespace VideoConversionApp.ViewModels.Components;
@@ -14,6 +15,8 @@ namespace VideoConversionApp.ViewModels.Components;
 public partial class VideoThumbViewModel : ViewModelBase
 {
 
+    // For visual representation; these do not affect anything except the visual presentation in the
+    // UserControl.
     [ObservableProperty] public partial string FullFileName { get; set; } = "";
     [ObservableProperty] public partial Bitmap ThumbnailImage { get; set; } = null!;
     [ObservableProperty] public partial string PreviewFileName { get; set; } = "";
@@ -21,11 +24,18 @@ public partial class VideoThumbViewModel : ViewModelBase
     [ObservableProperty] public partial double VideoLength { get; set; } = 0;
     [ObservableProperty] public partial DateTime VideoDateTime { get; set; } = DateTime.MinValue;
     [ObservableProperty] public partial bool HasLoadingThumbnail { get; set; } = true;
-    [ObservableProperty] public partial bool IsSelectedForConversion { get; set; } = false;
+    [ObservableProperty] public partial bool ShowAsSelectedForConversion { get; set; } = false;
+    [ObservableProperty] public partial bool HasProblems { get; set; } = false;
+    [ObservableProperty] public partial string ToolTipMessage { get; set; } = null!;
 
     public string VideoDateTimeString => VideoDateTime.ToString(DataFormattingHelpers.TryResolveActiveCulture());
     public string FileSizeString => FileSize.AsDataQuantityString(2);
     public string VideoLengthString => TimeSpan.FromSeconds(VideoLength).ToString(@"hh\:mm\:ss");
+    
+    /// <summary>
+    /// The linked data model.
+    /// </summary>
+    public ConvertibleVideoModel? LinkedConvertibleVideoModel { get; set; }
 
     private static readonly Bitmap DefaultThumbnail = new (AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/videostrip.png")));
     

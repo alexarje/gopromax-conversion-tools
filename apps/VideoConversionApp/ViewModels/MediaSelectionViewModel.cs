@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
@@ -15,26 +14,27 @@ using VideoConversionApp.ViewModels.Components;
 
 namespace VideoConversionApp.ViewModels;
 
-public partial class MediaSelectionViewModel : ViewModelBase
+public partial class MediaSelectionViewModel : MainViewModelPart
 {
-    [AllowNull]
+
     private readonly IMediaInfoService _mediaInfoService;
-    [AllowNull]
     private readonly IStorageDialogProvider _storageDialogProvider;
-    [AllowNull]
     private readonly IMediaPreviewService _mediaPreviewService;
+    private readonly IConversionManager _conversionManager;
 
     public ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
         new ObservableCollection<VideoThumbViewModel>();
     
-    
-    public MediaSelectionViewModel(IMediaInfoService mediaInfoService, 
+    public MediaSelectionViewModel(IServiceProvider serviceProvider, 
+        IMediaInfoService mediaInfoService, 
         IStorageDialogProvider storageDialogProvider,
-        IMediaPreviewService mediaPreviewService)
+        IMediaPreviewService mediaPreviewService,
+        IConversionManager conversionManager) : base(serviceProvider)
     {
         _mediaInfoService = mediaInfoService;
         _storageDialogProvider = storageDialogProvider;
         _mediaPreviewService = mediaPreviewService;
+        _conversionManager = conversionManager;
 
         if (Design.IsDesignMode)
         {
@@ -60,7 +60,14 @@ public partial class MediaSelectionViewModel : ViewModelBase
         foreach (var selectedFile in selectedFiles)
         {
             var fullFilename = selectedFile!.TryGetLocalPath();
+            if (VideoList.Any(v => v.FullFileName == fullFilename))
+                continue;
+            
             var mediaInfo = await _mediaInfoService.GetMediaInfoAsync(fullFilename!);
+            var convertibleVideo = new ConvertibleVideoModel(mediaInfo);
+            if (mediaInfo.IsValidVideo && mediaInfo.IsGoProMaxFormat)
+                _conversionManager.AddToConversionCandidates(convertibleVideo);
+
             var thumbViewModel = new VideoThumbViewModel
             {
                 FullFileName = fullFilename!,
@@ -68,16 +75,24 @@ public partial class MediaSelectionViewModel : ViewModelBase
                 FileSize = mediaInfo.SizeBytes,
                 VideoDateTime = mediaInfo.CreatedDateTime,
                 VideoLength = mediaInfo.DurationSeconds,
-                IsSelectedForConversion = false
+                ShowAsSelectedForConversion = mediaInfo.IsGoProMaxFormat && convertibleVideo.IsEnabledForConversion,
+                LinkedConvertibleVideoModel = mediaInfo.IsGoProMaxFormat ? convertibleVideo : null,
+                HasProblems = !mediaInfo.IsGoProMaxFormat || !mediaInfo.IsValidVideo,
+                ToolTipMessage = mediaInfo.ValidationIssues is { Length: > 0 } 
+                    ? string.Join("\n", new[] {"Video has issues, cannot use:"}.Concat(mediaInfo.ValidationIssues)) 
+                    : null!
             };
+
             thumbViewModel.OnCloseClickCommand = new RelayCommand(() =>
             {
-                RemoveFile(thumbViewModel);
+                VideoList.Remove(thumbViewModel);
+                _conversionManager.RemoveFromConversionCandidates(thumbViewModel.LinkedConvertibleVideoModel);
             });
+            
             thumbViewModel.OnSelectFileCommand = new RelayCommand<bool>((isChecked) =>
             {
-                Console.WriteLine("Checked: " + isChecked);
-                // TODO select the file for conversion...
+                thumbViewModel.LinkedConvertibleVideoModel.IsEnabledForConversion = isChecked;
+                thumbViewModel.ShowAsSelectedForConversion = isChecked;
             });
             newThumbs.Add((thumbViewModel, mediaInfo));
             VideoList.Add(thumbViewModel);
@@ -96,16 +111,14 @@ public partial class MediaSelectionViewModel : ViewModelBase
 
     }
 
-    private void RemoveFile(VideoThumbViewModel thumbViewModel)
-    {
-        // TODO also remove from conversion...
-        VideoList.Remove(thumbViewModel);
-    }
-
     [RelayCommand]
     private void ClearAllFiles()
     {
-        // TODO also remove from conversion...
+        foreach (var videoThumbViewModel in VideoList)
+        {
+            if (videoThumbViewModel.LinkedConvertibleVideoModel != null)
+                _conversionManager.RemoveFromConversionCandidates(videoThumbViewModel.LinkedConvertibleVideoModel);
+        }
         VideoList.Clear();
     }
 
@@ -114,7 +127,11 @@ public partial class MediaSelectionViewModel : ViewModelBase
     {
         foreach (var videoThumbViewModel in VideoList)
         {
-            videoThumbViewModel.IsSelectedForConversion = true;
+            if (videoThumbViewModel.LinkedConvertibleVideoModel == null) 
+                continue;
+            
+            videoThumbViewModel.LinkedConvertibleVideoModel.IsEnabledForConversion = true;
+            videoThumbViewModel.ShowAsSelectedForConversion = true;
         }
     }
 
@@ -123,7 +140,11 @@ public partial class MediaSelectionViewModel : ViewModelBase
     {
         foreach (var videoThumbViewModel in VideoList)
         {
-            videoThumbViewModel.IsSelectedForConversion = false;
+            if (videoThumbViewModel.LinkedConvertibleVideoModel == null) 
+                continue;
+            
+            videoThumbViewModel.LinkedConvertibleVideoModel.IsEnabledForConversion = false;
+            videoThumbViewModel.ShowAsSelectedForConversion = false;
         }
     }
 }

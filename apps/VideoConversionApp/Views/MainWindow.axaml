@@ -6,84 +6,132 @@
   xmlns:v="clr-namespace:VideoConversionApp.Views"
   mc:Ignorable="d" d:DesignWidth="1600" d:DesignHeight="800"
   x:Class="VideoConversionApp.Views.MainWindow"
-  x:DataType="vm:MainViewModel"
+  x:DataType="vm:MainWindowViewModel"
   Title="VideoConversionApp"
   Name="AppMainWindow"
   Icon="/Images/360-icon.png">
 
   <Design.DataContext>
-    <vm:MainViewModel>
+    <vm:MainWindowViewModel>
       <x:Arguments>
         <x:Null></x:Null>
       </x:Arguments>
-    </vm:MainViewModel>
+    </vm:MainWindowViewModel>
   </Design.DataContext>
 
-  <Window.Styles>
-
-  </Window.Styles>
 
   <Grid>
-  <TabControl TabStripPlacement="Bottom" Padding="0">
-    
-    <TabControl.Styles>
-      <Style Selector="TabControl /template/ WrapPanel">
-        <Setter Property="HorizontalAlignment" Value="Center"/>
-        <Setter Property="MinHeight" Value="60" />
-      </Style>
-      <Style Selector="StackPanel.tab">
-        <Setter Property="MinWidth" Value="200"></Setter>
-        <Setter Property="Background" Value="Transparent"></Setter>
-      </Style>
-    </TabControl.Styles>
-    
-    <TabItem>
-      <TabItem.HeaderTemplate>
-        <DataTemplate>
-          <StackPanel Classes="tab">
-            <Image Source="../Images/filmstrip-stack.png" Height="20" Margin="0, 10, 0, 2"
-              RenderOptions.BitmapInterpolationMode="HighQuality"></Image>
-            <TextBlock Margin="4" HorizontalAlignment="Center">Media</TextBlock>
-          </StackPanel>
-        </DataTemplate>
-      </TabItem.HeaderTemplate>
+
+    <!-- 
+      Main content, in TabControl tab items 
+    -->
+    <TabControl TabStripPlacement="Bottom" Padding="0">
+
+      <!-- Styling for the tabs themselves -->
+      <TabControl.Styles>
+        <Style Selector="TabControl /template/ WrapPanel">
+          <Setter Property="HorizontalAlignment" Value="Center" />
+          <Setter Property="MinHeight" Value="60" />
+        </Style>
+        <Style Selector="StackPanel.tab">
+          <Setter Property="MinWidth" Value="200"></Setter>
+          <Setter Property="Background" Value="Transparent"></Setter>
+        </Style>
+      </TabControl.Styles>
+
       
-      <Grid ColumnDefinitions="3*, 9*" RowDefinitions="*" Name="MainGrid">
-   
-        <!-- LEFT -->
-        <v:MediaSelectionView Grid.Row="0" Grid.Column="0"
-          DataContext="{Binding MediaSelectionViewModel}" />
+      
+      <!-- Media tab and its contents -->
+      <TabItem>
+        <!-- Tab -->
+        <TabItem.HeaderTemplate>
+          <DataTemplate>
+            <StackPanel Classes="tab">
+              <Image Source="../Images/filmstrip-stack.png" 
+                Height="20" 
+                Margin="0, 10, 0, 2"
+                RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <TextBlock Margin="4" 
+                HorizontalAlignment="Center">
+                Media
+              </TextBlock>
+            </StackPanel>
+          </DataTemplate>
+        </TabItem.HeaderTemplate>
 
-        <!-- MIDDLE -->
-        <v:ConversionPreviewView Grid.Row="0" Grid.Column="1" />
+        <!-- Content -->
+        <Grid Name="MainGrid" 
+          ColumnDefinitions="3*, 9*" 
+          RowDefinitions="*">
+
+          <!-- LEFT -->
+          <v:MediaSelectionView Name="MediaSelection" 
+            Grid.Row="0" 
+            Grid.Column="0"
+            DataContext="{Binding MediaSelectionViewModel}" />
+
+          <!-- MIDDLE + RIGHT -->
+          <v:ConversionPreviewView Name="ConversionPreview" 
+            Grid.Row="0" 
+            Grid.Column="1" 
+            DataContext="{Binding ConversionPreviewViewModel}" />
+
+        </Grid>
         
+      </TabItem>
 
-      </Grid>
-    </TabItem>
-    <TabItem>
-      <TabItem.HeaderTemplate>
-        <DataTemplate>
-          <StackPanel Classes="tab">
-            <Image Source="../Images/filmstrip-stack.png" Height="20" Margin="0, 10, 0, 2"
-              RenderOptions.BitmapInterpolationMode="HighQuality"></Image>
-            <TextBlock Margin="4" HorizontalAlignment="Center">Render</TextBlock>
-          </StackPanel>
-        </DataTemplate>
-      </TabItem.HeaderTemplate>
-      <TextBlock>Here be dragons</TextBlock>
-    </TabItem>
-    <TabItem>
-      <TabItem.HeaderTemplate>
-        <DataTemplate>
-          <StackPanel Classes="tab">
-            <Image Source="../Images/filmstrip-stack.png" Height="20" Margin="0, 10, 0, 2"
-              RenderOptions.BitmapInterpolationMode="HighQuality"></Image>
-            <TextBlock Margin="4" HorizontalAlignment="Center">Settings</TextBlock>
-          </StackPanel>
-        </DataTemplate>
-      </TabItem.HeaderTemplate>
-      <TextBlock>Here be dragons</TextBlock>
-    </TabItem>
-  </TabControl>
-</Grid>
+      
+      
+      <!-- 
+        Render tab and its contents 
+      -->
+      <TabItem>
+        <!-- Tab -->
+        <TabItem.HeaderTemplate>
+          <DataTemplate>
+            <StackPanel Classes="tab">
+              <Image Source="../Images/filmstrip-stack.png" 
+                Height="20" 
+                Margin="0, 10, 0, 2"
+                RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <TextBlock Margin="4" 
+                HorizontalAlignment="Center">
+                Render
+              </TextBlock>
+            </StackPanel>
+          </DataTemplate>
+        </TabItem.HeaderTemplate>
+        <!-- Content -->
+        <TextBlock>Here be dragons</TextBlock>
+      </TabItem>
+
+      
+      
+      <!-- 
+        Settings tab and its contents 
+      -->
+      <TabItem>
+        <!-- Tab -->
+        <TabItem.HeaderTemplate>
+          <DataTemplate>
+            <StackPanel Classes="tab">
+              <Image Source="../Images/filmstrip-stack.png" 
+                Height="20" 
+                Margin="0, 10, 0, 2"
+                RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <TextBlock Margin="4" 
+                HorizontalAlignment="Center">
+                Settings
+              </TextBlock>
+            </StackPanel>
+          </DataTemplate>
+        </TabItem.HeaderTemplate>
+        <!-- Content -->
+        <TextBlock>Here be dragons</TextBlock>
+      </TabItem>
+    </TabControl>
+    
+  </Grid>
+  
+  
 </Window>
