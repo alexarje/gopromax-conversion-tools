@@ -3,8 +3,10 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:components="clr-namespace:VideoConversionApp.Views.Components"
+  xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
   mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="450"
-  x:Class="VideoConversionApp.Views.ConversionPreviewView">
+  x:Class="VideoConversionApp.Views.ConversionPreviewView"
+  x:DataType="vm:ConversionPreviewViewModel">
 
   <UserControl.Styles>
     <Style Selector="Button.frame-next-prev-button">
@@ -43,11 +45,14 @@
         </TextBlock>
 
         <Panel Grid.Row="1" Grid.Column="0" Margin="10 0 10 0">
-          <Image Source="../Images/sample-thn.jpg" MinHeight="300" Stretch="Uniform" Name="SnapshotFrameImage" />
-          <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Left">
+          <!-- dynamic, generate frames, then change the source -->
+          <Image Name="SnapshotFrameImage" Source="{Binding CurrentSnapshotFrameImage}" MinHeight="300" Stretch="Uniform" />
+          <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Left"
+            Command="{Binding PreviousFrame}">
             <PathIcon Data="{StaticResource chevron_left_regular}" />
           </Button>
-          <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Right">
+          <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Right"
+            Command="{Binding NextFrame}">
             <PathIcon Data="{StaticResource chevron_right_regular}" />
           </Button>
         </Panel>

@@ -22,7 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (Design.IsDesignMode)
         {
             MediaSelectionViewModel = new MediaSelectionViewModel(null!, null!, null!, null!, null!);
-            ConversionPreviewViewModel = new ConversionPreviewViewModel(null!);
+            ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!);
         }
     }
     

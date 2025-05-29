@@ -147,4 +147,6 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             videoThumbViewModel.ShowAsSelectedForConversion = false;
         }
     }
+    
+    
 }

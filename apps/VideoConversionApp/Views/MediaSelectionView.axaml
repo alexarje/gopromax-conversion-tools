@@ -14,6 +14,8 @@
         <x:Null></x:Null>
         <x:Null></x:Null>
         <x:Null></x:Null>
+        <x:Null></x:Null>
+        <x:Null></x:Null>
       </x:Arguments>
     </vm:MediaSelectionViewModel>
   </Design.DataContext>
@@ -73,7 +75,8 @@
 
     </Border>
     <Border Classes="pane-body pb-lb">
-      <ListBox ItemsSource="{Binding VideoList}" BorderBrush="Transparent">
+      <ListBox Name="MediaSelectionListBox" ItemsSource="{Binding VideoList}" BorderBrush="Transparent"
+        SelectionChanged="OnSelectionChanged">
         <ListBox.ItemTemplate>
           <DataTemplate>
             <components:VideoThumbView Margin="10 0 10 0" Height="100"
