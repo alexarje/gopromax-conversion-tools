@@ -11,12 +11,13 @@ public class MediaInfo
     /// Describes the media (one video), very basic stuff.
     /// </summary>
     public MediaInfo(string filename, bool isValidVideo, bool isGoProMaxFormat, 
-        long durationSeconds, DateTime createdDateTime, long sizeBytes, string[]? validationIssues)
+        long durationSeconds, long durationMilliseconds, DateTime createdDateTime, long sizeBytes, string[]? validationIssues)
     {
         Filename = filename;
         IsValidVideo = isValidVideo;
         IsGoProMaxFormat = isGoProMaxFormat;
         DurationSeconds = durationSeconds;
+        DurationMilliseconds = durationMilliseconds;
         CreatedDateTime = createdDateTime;
         SizeBytes = sizeBytes;
         ValidationIssues = validationIssues;
@@ -33,6 +34,7 @@ public class MediaInfo
     public bool IsValidVideo { get; }
     public bool IsGoProMaxFormat { get; }
     public long DurationSeconds { get; }
+    public long DurationMilliseconds { get; }
     public DateTime CreatedDateTime { get; }
     public long SizeBytes { get; }
     public string[]? ValidationIssues { get; }

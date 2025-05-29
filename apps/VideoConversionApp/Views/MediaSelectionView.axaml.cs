@@ -15,13 +15,4 @@ public partial class MediaSelectionView : UserControl
         InitializeComponent();
     }
 
-    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (MediaSelectionViewModel == null)
-            return;
-        
-        var selectedItem = MediaSelectionListBox.SelectedItem as VideoThumbViewModel;
-        MediaSelectionViewModel.MainWindowViewModel.ConversionPreviewViewModel!
-            .SetVideoModelAsync(selectedItem?.LinkedConvertibleVideoModel);
-    }
 }

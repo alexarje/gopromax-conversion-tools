@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using VideoConversionApp.Models;
@@ -9,6 +10,8 @@ namespace VideoConversionApp.Abstractions;
 public interface IMediaPreviewService
 {
     Task<byte[]?> GenerateThumbnailAsync(MediaInfo mediaInfo);
-    void QueueThumbnailGeneration(MediaInfo mediaInfo, Action<Bitmap> callback);
-    Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, int numberOfFrames);
+    Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, int numberOfFrames, CancellationToken cancellationToken);
+    Task<byte[]?> QueueThumbnailGenerationAsync(MediaInfo mediaInfo);
+    Task<byte[]?> QueueSnapshotFrameAsync(MediaInfo mediaInfo, long positionMilliseconds, CancellationToken cancellationToken);
+    void ClearSnapshotFrameQueue();
 }

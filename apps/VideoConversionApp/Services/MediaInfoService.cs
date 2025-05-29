@@ -43,7 +43,7 @@ public class MediaInfoService : IMediaInfoService
         await media.Parse(MediaParseOptions.ParseLocal, 2000);
 
         if (media.Duration < 0)
-            return new MediaInfo(filename, false, false, 0, 
+            return new MediaInfo(filename, false, false, 0, 0,
                 createTimeDefault, sizeBytes, ["Media duration was reported as < 0"]);
 
         long seconds = media.Duration / 1000;
@@ -53,7 +53,7 @@ public class MediaInfoService : IMediaInfoService
         var s = media.Meta(MetadataType.Date) ?? createTimeDefault.ToString(CultureInfo.CurrentCulture);
         var createdDateTime = DateTime.Parse(s);
         
-        return new MediaInfo(filename, true, isGoProMaxFormat, seconds, createdDateTime, 
+        return new MediaInfo(filename, true, isGoProMaxFormat, seconds, media.Duration, createdDateTime, 
             sizeBytes, validationIssues.ToArray());
         
     }

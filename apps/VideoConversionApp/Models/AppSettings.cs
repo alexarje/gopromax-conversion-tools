@@ -13,6 +13,15 @@ public struct AppSettings
     [JsonPropertyName("thumbnailAtPosition")]
     public int ThumbnailAtPosition = 50;
 
+    [JsonPropertyName("numberOfSnapshotFrames")]
+    public int NumberOfSnapshotFrames = 6;
+    
+    [JsonPropertyName("numberOfSnapshotProcessingThreads")]
+    public int NumberOfSnapshotProcessingThreads = 3;
+    
+    [JsonPropertyName("numberOfThumbnailProcessingThreads")]
+    public int NumberOfThumbnailProcessingThreads = 2;
+
     public AppSettings()
     {
     }

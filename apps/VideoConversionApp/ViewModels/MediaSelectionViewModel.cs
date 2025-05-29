@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
@@ -21,6 +23,9 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     private readonly IStorageDialogProvider _storageDialogProvider;
     private readonly IMediaPreviewService _mediaPreviewService;
     private readonly IConversionManager _conversionManager;
+    
+    [ObservableProperty]
+    public partial VideoThumbViewModel? SelectedVideoThumbViewModel { get; set; }
 
     public ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
         new ObservableCollection<VideoThumbViewModel>();
@@ -40,6 +45,17 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         {
             VideoList.Add(new VideoThumbViewModel());
             VideoList.Add(new VideoThumbViewModel());
+        }
+        
+        PropertyChanged += OnPropertyChanged;
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SelectedVideoThumbViewModel))
+        {
+            MainWindowViewModel.ConversionPreviewViewModel!.SetActiveVideoModelAsync(
+                SelectedVideoThumbViewModel?.LinkedConvertibleVideoModel, SelectedVideoThumbViewModel?.ThumbnailImage);
         }
     }
 
@@ -98,16 +114,32 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             VideoList.Add(thumbViewModel);
         }
 
-        await Parallel.ForAsync(0, newThumbs.Count, async (i, token) =>
+        for (var i = 0; i < newThumbs.Count; i++)
         {
-            var thumbBytes = await _mediaPreviewService.GenerateThumbnailAsync(newThumbs[i].Item2);
-            if (thumbBytes != null)
-            {
-                using var stream = new MemoryStream(thumbBytes);
-                newThumbs[i].Item1.ThumbnailImage = new Bitmap(stream);
-                newThumbs[i].Item1.HasLoadingThumbnail = false;
-            }
-        });
+            var item = newThumbs[i];
+            var i1 = i;
+            var thumbBytes = _mediaPreviewService.QueueThumbnailGenerationAsync(item.Item2)
+                .ContinueWith(task =>
+                {
+                    if (task.Result != null)
+                    {
+                        using var stream = new MemoryStream(task.Result);
+                        newThumbs[i1].Item1.ThumbnailImage = new Bitmap(stream);
+                        newThumbs[i1].Item1.HasLoadingThumbnail = false;
+                    }
+                });
+        }
+
+        // await Parallel.ForAsync(0, newThumbs.Count, async (i, token) =>
+        // {
+        //     var thumbBytes = await _mediaPreviewService.GenerateThumbnailAsync(newThumbs[i].Item2);
+        //     if (thumbBytes != null)
+        //     {
+        //         using var stream = new MemoryStream(thumbBytes);
+        //         newThumbs[i].Item1.ThumbnailImage = new Bitmap(stream);
+        //         newThumbs[i].Item1.HasLoadingThumbnail = false;
+        //     }
+        // });
 
     }
 
