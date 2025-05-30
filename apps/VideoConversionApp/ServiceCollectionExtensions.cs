@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<IMediaPreviewService, MediaPreviewService>();
         collection.AddSingleton<IAppSettingsService, AppSettingsService>();
         collection.AddSingleton<IConversionManager, ConversionManager>();
+        collection.AddSingleton<IAvFilterFactory, AvFilterFactory>();
         
         collection.AddSingleton<MainWindowViewModel>();
         collection.AddSingleton<MediaSelectionViewModel>();

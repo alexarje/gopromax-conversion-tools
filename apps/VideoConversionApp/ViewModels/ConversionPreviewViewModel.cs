@@ -25,6 +25,8 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     
     [ObservableProperty]
     public partial IImage? CurrentSnapshotFrameImage { get; set; }
+    [ObservableProperty]
+    public partial double SnapshotRenderProgress { get; set; }
     
     private CancellationTokenSource? _snapshotGenerationCts;
     
@@ -67,33 +69,43 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         
         // Clear the queue if it's currently generating something already.
         _mediaPreviewService.ClearSnapshotFrameQueue();
-        var skipLength = videoModel.MediaInfo.DurationMilliseconds / (frameCount - 1);
-        var bitmaps = new IImage[frameCount];
-
-        var allTasks = new List<Task>();
-        for (var i = 0; i < frameCount; i++)
+        
+        //
+        // var allTasks = new List<Task>();
+        // for (var i = 0; i < frameCount; i++)
+        // {
+        //     // Never go over max length of the video, and always 1000ms under.
+        //     // There seems to be issues generating a frame at the absolute end time.
+        //     var timePosition = Math.Min((videoModel.MediaInfo.DurationMilliseconds - 1000), i * skipLength);
+        //     var i1 = i;
+        //     var task = _mediaPreviewService.QueueSnapshotFrameAsync(videoModel.MediaInfo, timePosition, myCts.Token)
+        //         .ContinueWith(task =>
+        //         {
+        //             if (myCts.Token.IsCancellationRequested)
+        //                 return;
+        //             
+        //             if (task.Result != null)
+        //             {
+        //                 using var stream = new MemoryStream(task.Result);
+        //                 bitmaps[i1] = new Bitmap(stream);
+        //             }
+        //         });
+        //     allTasks.Add(task);
+        // }
+        //
+        // await Task.WhenAll(allTasks);
+        
+        var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(videoModel.MediaInfo, frameCount, 
+            (progress) => SnapshotRenderProgress = progress, myCts.Token);
+        
+        var bitmaps = new IImage[bitmapBytes.Count];
+        for (int i = 0; i < bitmapBytes.Count; i++)
         {
-            // Never go over max length of the video, and always 1000ms under.
-            // There seems to be issues generating a frame at the absolute end time.
-            var timePosition = Math.Min((videoModel.MediaInfo.DurationMilliseconds - 1000), i * skipLength);
-            var i1 = i;
-            var task = _mediaPreviewService.QueueSnapshotFrameAsync(videoModel.MediaInfo, timePosition, myCts.Token)
-                .ContinueWith(task =>
-                {
-                    if (myCts.Token.IsCancellationRequested)
-                        return;
-                    
-                    if (task.Result != null)
-                    {
-                        using var stream = new MemoryStream(task.Result);
-                        bitmaps[i1] = new Bitmap(stream);
-                    }
-                });
-            allTasks.Add(task);
+            using var stream = new MemoryStream(bitmapBytes[i]);
+            bitmaps[i] = new Bitmap(stream);
         }
         
-        await Task.WhenAll(allTasks);
-        SnapshotFrameImages = bitmaps.Where(x => x != null).ToList();
+        SnapshotFrameImages = bitmaps.ToList();
         NextFrame();
         
         

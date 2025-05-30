@@ -68,7 +68,7 @@
               </ToggleButton.Content>
             </ToggleButton>
             <Panel Grid.Column="1">
-              <ProgressBar ShowProgressText="false" Value="0" Margin="4 0 0 0"></ProgressBar>
+              <ProgressBar ShowProgressText="false" Value="{Binding SnapshotRenderProgress}" Margin="4 0 0 0"></ProgressBar>
               <Button Name="RenderSnapshotFrameImagesButton" Margin="4 0 0 0" Background="rgba(100,100,100,100)">Render</Button>
             </Panel>
           </Grid>

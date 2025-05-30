@@ -2,7 +2,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
@@ -21,8 +23,11 @@ public class MediaPreviewService : IMediaPreviewService
         public CancellationToken CancellationToken;
     }
 
+
     private IAppSettingsService _appSettingsService;
-    private string _singleFrameAvFilter = string.Empty;
+    private readonly IAvFilterFactory _avFilterFactory;
+    private string _singleFrameAvFilter = string.Empty; // DEPRECATED
+    private string _avFilterTemplate = string.Empty;
     private List<Thread> _thumbnailQueueProcessingThreads = new List<Thread>();
     private List<Thread> _snapshotQueueProcessingThreads = new List<Thread>();
 
@@ -30,9 +35,11 @@ public class MediaPreviewService : IMediaPreviewService
     private ConcurrentQueue<ThreadWorkItem<(MediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> _snapshotFrameGenerationQueue = new();
 
     
-    public MediaPreviewService(IAppSettingsService appSettingsService)
+    public MediaPreviewService(IAppSettingsService appSettingsService,
+        IAvFilterFactory avFilterFactory)
     {
         _appSettingsService = appSettingsService;
+        _avFilterFactory = avFilterFactory;
         LoadSingleFrameAvFilter();
     }
 
@@ -221,7 +228,8 @@ public class MediaPreviewService : IMediaPreviewService
 
         }
     }
-
+    
+    
     private void LoadSingleFrameAvFilter()
     {
         if (_singleFrameAvFilter == string.Empty)
@@ -276,96 +284,116 @@ public class MediaPreviewService : IMediaPreviewService
     }
 
     public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, int numberOfFrames, 
+        Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
         if (numberOfFrames < 2)
             throw new ArgumentException("Number of frames must be at least 2");
      
         var appSettings = _appSettingsService.GetSettings();
-        var skipLength = mediaInfo.DurationSeconds / (numberOfFrames - 1);
-        var timePositions = new string[numberOfFrames];
-        for (var i = 0; i < numberOfFrames; i++)
-        {
-            // Never go over max length of the video, and always 1000ms under.
-            // There seems to be issues generating a frame at the absolute end time.
-            var timePosSeconds = Math.Min((mediaInfo.DurationMilliseconds - 1000) / 1000.0, i * skipLength);
-            timePositions[i] = TimeSpan.FromSeconds(timePosSeconds).ToString(@"hh\:mm\:ss\.fff");
-        }
-        
-        var frames = new byte[numberOfFrames][];
-        
-        var parallelOpts = new ParallelOptions()
-        {
-            MaxDegreeOfParallelism = appSettings.NumberOfSnapshotFrames,
-            CancellationToken = cancellationToken
-        };
-        
-        
-        // OK so problem here is:
-        // We click an item, and this starts. A number of threads start processing with ffmpeg.
-        // We click another item, cancellation is requested. These are already running.
-        // The new threads already start and do not wait for anything.
-        // Then we click yet another item, and we start more threads.
-        // We should be queueing, not immediately starting. Then canceling should cancel all currently
-        // queued items, so that their ffmpeg processes never start.
-        await Parallel.ForAsync(0, numberOfFrames, parallelOpts, async (i, token) =>
-        {
-            if (token.IsCancellationRequested)
-            {
-                Console.WriteLine("Parallel snapshot cancellation requested, did not start.");
-                return;
-            }
+        var skipLength = mediaInfo.DurationMilliseconds / (numberOfFrames - 1);
 
-            var appSettings = _appSettingsService.GetSettings();
-            var tmpFrameFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
+        var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
+        {
+            FrameDistance = skipLength / 1000,
+            KeyFramesOnly = true
+        }, new AvFilterFrameRotation()
+        {
+            Pitch = 0,
+            Roll = 0,
+            Yaw = 0
+        });
         
-            var frameTimePosition = timePositions[i];
-            var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
+        // TODO caching
+        var genId = Guid.NewGuid();
+        var tempPath = Path.Combine(Path.GetTempPath(), genId.ToString());
+        Directory.CreateDirectory(tempPath);
+        
+        var tmpFrameFilePath = Path.Combine(tempPath, "snapshot-%06d.jpg");
+
+        // TODO apply these settings everywhere!
+        var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
             [
-                "-accurate_seek",
-                "-skip_frame", "nokey",
-                "-ss", frameTimePosition,
-                "-i", mediaInfo.Filename,
+                //"-skip_frame", "nokey",
+                "-discard", "nokey",
                 "-y",
+                //"-loglevel", "8",
+                "-progress", "pipe:1",
+                "-stats_period", "0.25",
                 "-vsync", "0",
-                "-filter_complex", _singleFrameAvFilter,
+                "-filter_complex", avFilterString,
+                "-i", mediaInfo.Filename,
                 "-map", "[OUTPUT_FRAME]",
-                "-frames:v", "1",
                 "-f", "image2",
                 "-s", "672x398",
                 tmpFrameFilePath
-            ]);
-            processStartInfo.CreateNoWindow = true;
-            processStartInfo.RedirectStandardError = true;
-
-            try
+            ])
             {
-                var process = Process.Start(processStartInfo);
-                await process!.WaitForExitAsync(token);
-                if (process.ExitCode == 0 && File.Exists(tmpFrameFilePath))
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                //RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
+            
+
+        
+        
+        try
+        {
+            var process = new Process()
+            {
+                StartInfo = processStartInfo,
+                EnableRaisingEvents = true
+            };
+            process.Start();
+            //process.BeginErrorReadLine();
+            process.BeginOutputReadLine();
+
+            process!.OutputDataReceived += (sender, args) =>
+            {
+                Console.WriteLine(args.Data);
+                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^frame=\d"))
                 {
-                    var imgBytes = await File.ReadAllBytesAsync(tmpFrameFilePath);
-                    File.Delete(tmpFrameFilePath);
-                    frames[i] = imgBytes;
+                    var renderedFrameNumber = int.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
+                    progressCallback?.Invoke(Math.Round((double)renderedFrameNumber / numberOfFrames * 100.0, 2));
                 }
-                else
+                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
                 {
-                    Console.WriteLine(process.StandardError.ReadToEnd());
-                    Console.WriteLine(process.ExitCode);
+                    progressCallback?.Invoke(100.0);
                 }
-            }
-            catch (TaskCanceledException e)
+            };
+            await process!.WaitForExitAsync(cancellationToken);
+            if (process.ExitCode == 0 && Directory.Exists(tempPath))
             {
-                Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+                var frames = Directory.GetFiles(tempPath, "*.jpg");
+                var frameBytes = new byte[frames.Length][];
+
+                for (var i = 0; i < frames.Length; i++)
+                {
+                    frameBytes[i] = await File.ReadAllBytesAsync(frames[i]);
+                    File.Delete(frames[i]);
+                }
+                
+                return frameBytes;
             }
-            catch (Exception e)
+            else
             {
-                // TODO handle this
-                Console.WriteLine("Error: " + e.Message);
+                Console.WriteLine(process.StandardError.ReadToEnd());
+                Console.WriteLine(process.ExitCode);
             }
-        });
-
-        return frames;
-
+        }
+        catch (TaskCanceledException e)
+        {
+            Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+        }
+        catch (Exception e)
+        {
+            // TODO handle this
+            Console.WriteLine("Error: " + e.Message);
+        }
+        
+        return Array.Empty<byte[]>();
+        
     }
 }

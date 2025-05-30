@@ -26,6 +26,7 @@
     <ItemGroup>
         <AvaloniaResource Include="Images\**"/>
         <AvaloniaResource Include="Assets\**"/>
+        <AvaloniaResource Include="Resources\transform-template.avfilter" />
         <None Remove="Resources\360-to-equirect.avfilter" />
         <AvaloniaResource Include="Resources\360-to-equirect.avfilter" />
     </ItemGroup>
