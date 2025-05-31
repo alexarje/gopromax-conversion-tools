@@ -13,6 +13,7 @@ public class AvFilterFrameSelectCondition
     /// <summary>
     /// Frame minimum "distance" in seconds to the previous frame.
     /// Effectively creates a custom frame rate.
+    /// If left as null, does not apply the distance condition.
     /// </summary>
     public double? FrameDistance { get; set; }
 }

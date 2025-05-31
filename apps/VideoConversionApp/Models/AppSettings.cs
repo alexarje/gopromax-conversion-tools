@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace VideoConversionApp.Models;
 
+/// <summary>
+/// Settings construct.
+/// </summary>
 public struct AppSettings
 {
     [JsonPropertyName("ffmpegPath")]
@@ -20,7 +23,7 @@ public struct AppSettings
     public int NumberOfSnapshotProcessingThreads = 3;
     
     [JsonPropertyName("numberOfThumbnailProcessingThreads")]
-    public int NumberOfThumbnailProcessingThreads = 2;
+    public int NumberOfThumbnailProcessingThreads = 3;
 
     public AppSettings()
     {

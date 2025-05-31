@@ -18,7 +18,7 @@ namespace VideoConversionApp.ViewModels;
 
 public partial class MediaSelectionViewModel : MainViewModelPart
 {
-
+    private readonly IAppSettingsService _appSettingsService;
     private readonly IMediaInfoService _mediaInfoService;
     private readonly IStorageDialogProvider _storageDialogProvider;
     private readonly IMediaPreviewService _mediaPreviewService;
@@ -31,11 +31,13 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         new ObservableCollection<VideoThumbViewModel>();
     
     public MediaSelectionViewModel(IServiceProvider serviceProvider, 
+        IAppSettingsService appSettingsService,
         IMediaInfoService mediaInfoService, 
         IStorageDialogProvider storageDialogProvider,
         IMediaPreviewService mediaPreviewService,
         IConversionManager conversionManager) : base(serviceProvider)
     {
+        _appSettingsService = appSettingsService;
         _mediaInfoService = mediaInfoService;
         _storageDialogProvider = storageDialogProvider;
         _mediaPreviewService = mediaPreviewService;
@@ -54,7 +56,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     {
         if (e.PropertyName == nameof(SelectedVideoThumbViewModel))
         {
-            MainWindowViewModel.ConversionPreviewViewModel!.SetActiveVideoModelAsync(
+            _ = MainWindowViewModel.ConversionPreviewViewModel!.SetActiveVideoModelAsync(
                 SelectedVideoThumbViewModel?.LinkedConvertibleVideoModel, SelectedVideoThumbViewModel?.ThumbnailImage);
         }
     }
@@ -63,6 +65,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     [RelayCommand]
     private async Task AddFiles()
     {
+        var appSettings = _appSettingsService.GetSettings();
         var videoType = new FilePickerFileType("GoPro MAX .360");
         videoType.Patterns = [".360"];
 
@@ -72,7 +75,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             FileTypeFilter = [videoType]
         });
 
-        var newThumbs = new List<(VideoThumbViewModel, MediaInfo)>();
+        var thumbGenerationJobs = new List<(VideoThumbViewModel thumbViewModel, MediaInfo mediaInfo)>();
         foreach (var selectedFile in selectedFiles)
         {
             var fullFilename = selectedFile!.TryGetLocalPath();
@@ -110,36 +113,27 @@ public partial class MediaSelectionViewModel : MainViewModelPart
                 thumbViewModel.LinkedConvertibleVideoModel.IsEnabledForConversion = isChecked;
                 thumbViewModel.ShowAsSelectedForConversion = isChecked;
             });
-            newThumbs.Add((thumbViewModel, mediaInfo));
+            thumbGenerationJobs.Add((thumbViewModel, mediaInfo));
             VideoList.Add(thumbViewModel);
         }
 
-        for (var i = 0; i < newThumbs.Count; i++)
+        
+        for (var i = 0; i < thumbGenerationJobs.Count; i++)
         {
-            var item = newThumbs[i];
+            var item = thumbGenerationJobs[i];
             var i1 = i;
-            var thumbBytes = _mediaPreviewService.QueueThumbnailGenerationAsync(item.Item2)
+            var thumbTimePosition = appSettings.ThumbnailAtPosition / 100.0 * item.mediaInfo.DurationMilliseconds;
+            _ = _mediaPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePosition)
                 .ContinueWith(task =>
                 {
                     if (task.Result != null)
                     {
                         using var stream = new MemoryStream(task.Result);
-                        newThumbs[i1].Item1.ThumbnailImage = new Bitmap(stream);
-                        newThumbs[i1].Item1.HasLoadingThumbnail = false;
+                        thumbGenerationJobs[i1].thumbViewModel.ThumbnailImage = new Bitmap(stream);
+                        thumbGenerationJobs[i1].thumbViewModel.HasLoadingThumbnail = false;
                     }
                 });
         }
-
-        // await Parallel.ForAsync(0, newThumbs.Count, async (i, token) =>
-        // {
-        //     var thumbBytes = await _mediaPreviewService.GenerateThumbnailAsync(newThumbs[i].Item2);
-        //     if (thumbBytes != null)
-        //     {
-        //         using var stream = new MemoryStream(thumbBytes);
-        //         newThumbs[i].Item1.ThumbnailImage = new Bitmap(stream);
-        //         newThumbs[i].Item1.HasLoadingThumbnail = false;
-        //     }
-        // });
 
     }
 

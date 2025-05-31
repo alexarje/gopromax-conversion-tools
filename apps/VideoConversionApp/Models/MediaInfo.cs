@@ -7,9 +7,6 @@ namespace VideoConversionApp.Models;
 /// </summary>
 public class MediaInfo
 {
-    /// <summary>
-    /// Describes the media (one video), very basic stuff.
-    /// </summary>
     public MediaInfo(string filename, bool isValidVideo, bool isGoProMaxFormat, 
         long durationSeconds, long durationMilliseconds, DateTime createdDateTime, long sizeBytes, string[]? validationIssues)
     {

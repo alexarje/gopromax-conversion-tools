@@ -1,6 +1,8 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+  <!-- Slightly customized slider control from the simple theme -->
+  
   <ControlTheme x:Key="SliderRepeatTrackTheme"
     TargetType="RepeatButton">
     <Setter Property="Background" Value="Transparent" />

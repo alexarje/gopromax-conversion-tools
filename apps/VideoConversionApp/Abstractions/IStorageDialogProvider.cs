@@ -3,6 +3,9 @@ using Avalonia.Platform.Storage;
 
 namespace VideoConversionApp.Abstractions;
 
+/// <summary>
+/// A helper for retrieving the Avalonia StorageProvider from ViewModels.
+/// </summary>
 public interface IStorageDialogProvider
 {
     IStorageProvider GetStorageProvider();

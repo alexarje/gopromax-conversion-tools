@@ -18,17 +18,18 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     private readonly IMediaPreviewService _mediaPreviewService;
     private readonly IAppSettingsService _appSettingsService;
 
+    public IList<IImage> SnapshotFrameImages { get; set; } = [];
+
     [ObservableProperty]
     public partial ConvertibleVideoModel? VideoModel { get; set; }
-    
-    public List<IImage> SnapshotFrameImages { get; set; } = new List<IImage>();
-    
     [ObservableProperty]
     public partial IImage? CurrentSnapshotFrameImage { get; set; }
     [ObservableProperty]
     public partial double SnapshotRenderProgress { get; set; }
     [ObservableProperty]
     public partial bool BlurImageVisible { get; set; }
+    [ObservableProperty]
+    public partial bool AutoRenderOnChanges { get; set; }
     
     private CancellationTokenSource? _snapshotGenerationCts;
     
@@ -40,21 +41,16 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         _appSettingsService = appSettingsService;
     }
 
+    /// <summary>
+    /// Sets the active video in the main preview pane.
+    /// Triggers the generation of snapshot frames.
+    /// </summary>
+    /// <param name="videoModel"></param>
+    /// <param name="initialPreviewImage">Image to show initially in the snapshot image control before
+    /// the snapshot frames get generated.</param>
     public async Task SetActiveVideoModelAsync(ConvertibleVideoModel? videoModel, IImage? initialPreviewImage)
     {
-
         BlurImageVisible = true;
-        
-        // If there's already this operation in progress, cancel the previous one.
-        if (_snapshotGenerationCts != null && !_snapshotGenerationCts.Token.IsCancellationRequested)
-        {
-            _snapshotGenerationCts.Cancel();
-            Console.WriteLine("CANCEL!");
-        }
-
-        var myCts = new CancellationTokenSource();
-        _snapshotGenerationCts = myCts;
-        
         VideoModel = videoModel;
         
         if (videoModel == null && initialPreviewImage == null)
@@ -63,47 +59,14 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         if (initialPreviewImage != null)
         {
             CurrentSnapshotFrameImage = initialPreviewImage;
-            SnapshotFrameImages = new List<IImage>
-            {
-                initialPreviewImage
-            };
+            SnapshotFrameImages = [initialPreviewImage];
         }
 
         if (videoModel == null)
             return;
 
-        var frameCount = _appSettingsService.GetSettings().NumberOfSnapshotFrames;
-        
-        // Clear the queue if it's currently generating something already.
-        // _mediaPreviewService.ClearSnapshotFrameQueue();
+        await RenderSnapshotFramesAsync();
 
-        try
-        {
-            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(videoModel.MediaInfo, frameCount,
-                (progress) => SnapshotRenderProgress = progress, myCts.Token);
-
-            var bitmaps = new IImage[bitmapBytes.Count];
-            for (int i = 0; i < bitmapBytes.Count; i++)
-            {
-                using var stream = new MemoryStream(bitmapBytes[i]);
-                bitmaps[i] = new Bitmap(stream);
-            }
-
-            SnapshotFrameImages = bitmaps.ToList();
-            BlurImageVisible = false;
-            NextFrame();
-        }
-        catch (TaskCanceledException)
-        {
-            SnapshotRenderProgress = 0;
-        }
-        catch (Exception e)
-        {
-            // TODO what to do
-            Console.WriteLine(e);
-        }
-        
-        
     }
 
     [RelayCommand]
@@ -130,5 +93,49 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         if (prevIndex < 0)
             prevIndex = SnapshotFrameImages.Count - 1;
         CurrentSnapshotFrameImage = SnapshotFrameImages[prevIndex];
+    }
+
+    /// <summary>
+    /// Renders/generates the snapshot frames from the currently active video.
+    /// Removes the blur image upon success.
+    /// </summary>
+    [RelayCommand]
+    public async Task RenderSnapshotFramesAsync()
+    {
+        // If there's already this operation in progress, cancel the previous one.
+        if (_snapshotGenerationCts != null && !_snapshotGenerationCts.Token.IsCancellationRequested)
+            _snapshotGenerationCts.Cancel();
+
+        var myCts = new CancellationTokenSource();
+        _snapshotGenerationCts = myCts;
+        
+        var frameCount = _appSettingsService.GetSettings().NumberOfSnapshotFrames;
+        
+        try
+        {
+            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(VideoModel!.MediaInfo, frameCount,
+                (progress) => SnapshotRenderProgress = progress, myCts.Token);
+
+            var bitmaps = new IImage[bitmapBytes.Count];
+            for (int i = 0; i < bitmapBytes.Count; i++)
+            {
+                using var stream = new MemoryStream(bitmapBytes[i]);
+                bitmaps[i] = new Bitmap(stream);
+            }
+
+            SnapshotFrameImages = bitmaps.ToList();
+            BlurImageVisible = false;
+            NextFrame();
+        }
+        catch (TaskCanceledException)
+        {
+            SnapshotRenderProgress = 0;
+        }
+        catch (Exception e)
+        {
+            // TODO what to do
+            Console.WriteLine(e);
+        }
+
     }
 }

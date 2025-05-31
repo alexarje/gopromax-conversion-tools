@@ -7,8 +7,6 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 
@@ -16,6 +14,11 @@ namespace VideoConversionApp.Services;
 
 public class MediaPreviewService : IMediaPreviewService
 {
+    /// <summary>
+    /// A job class for our queues.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
     private class ThreadWorkItem<T, TResult>
     {
         public T WorkItem;
@@ -23,16 +26,12 @@ public class MediaPreviewService : IMediaPreviewService
         public CancellationToken CancellationToken;
     }
 
-
     private IAppSettingsService _appSettingsService;
     private readonly IAvFilterFactory _avFilterFactory;
-    private string _singleFrameAvFilter = string.Empty; // DEPRECATED
-    private string _avFilterTemplate = string.Empty;
-    private List<Thread> _thumbnailQueueProcessingThreads = new List<Thread>();
-    private List<Thread> _snapshotQueueProcessingThreads = new List<Thread>();
+    private List<Thread> _thumbnailQueueProcessingThreads = new();
 
-    private ConcurrentQueue<ThreadWorkItem<MediaInfo, TaskCompletionSource<byte[]?>>> _thumbnailGenerationQueue = new();
-    private ConcurrentQueue<ThreadWorkItem<(MediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> _snapshotFrameGenerationQueue = new();
+    private ConcurrentQueue<ThreadWorkItem<(MediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> 
+        _thumbnailGenerationQueue = new();
 
     
     public MediaPreviewService(IAppSettingsService appSettingsService,
@@ -40,9 +39,25 @@ public class MediaPreviewService : IMediaPreviewService
     {
         _appSettingsService = appSettingsService;
         _avFilterFactory = avFilterFactory;
-        LoadSingleFrameAvFilter();
     }
 
+    
+    public Task<byte[]?> QueueThumbnailGenerationAsync(MediaInfo mediaInfo, long timePositionMilliseconds)
+    {
+        var threadWorkItem = new ThreadWorkItem<(MediaInfo, long), TaskCompletionSource<byte[]?>>
+        {
+            WorkItem = (mediaInfo, timePositionMilliseconds),
+            Result = new TaskCompletionSource<byte[]?>()
+        };
+        _thumbnailGenerationQueue.Enqueue(threadWorkItem);
+        // Run immediately.
+        RunThumbnailProcessingThreads();
+        return threadWorkItem.Result.Task;
+    }
+
+    /// <summary>
+    /// Creates/starts a new processing thread, as many as are allowed concurrently, and cleans up completed ones.
+    /// </summary>
     private void RunThumbnailProcessingThreads()
     {
         var threadCount = _appSettingsService.GetSettings().NumberOfThumbnailProcessingThreads;
@@ -54,7 +69,7 @@ public class MediaPreviewService : IMediaPreviewService
                     _thumbnailQueueProcessingThreads.RemoveAt(i);
             }
 
-            while (_thumbnailQueueProcessingThreads.Count < threadCount)
+            if (_thumbnailQueueProcessingThreads.Count < threadCount)
             {
                 var thread = new Thread(ProcessThumbnailQueue);
                 _thumbnailQueueProcessingThreads.Add(thread);
@@ -63,87 +78,53 @@ public class MediaPreviewService : IMediaPreviewService
         }
     }
     
-    private void RunSnapshotFrameProcessingThreads()
-    {
-        var threadCount = _appSettingsService.GetSettings().NumberOfSnapshotProcessingThreads;
-        lock (_snapshotQueueProcessingThreads)
-        {
-            for (var i = _snapshotQueueProcessingThreads.Count - 1; i >= 0; i--)
-            {
-                if(!_snapshotQueueProcessingThreads[i].IsAlive)
-                    _snapshotQueueProcessingThreads.RemoveAt(i);
-            }
-
-            while (_snapshotQueueProcessingThreads.Count < threadCount)
-            {
-                var thread = new Thread(ProcessSnapshotFrameQueue);
-                _snapshotQueueProcessingThreads.Add(thread);
-                thread.Start();
-            }
-        }
-        
-    }
-    
-    public Task<byte[]?> QueueThumbnailGenerationAsync(MediaInfo mediaInfo)
-    {
-        var threadWorkItem = new ThreadWorkItem<MediaInfo, TaskCompletionSource<byte[]?>>
-        {
-            WorkItem = mediaInfo,
-            Result = new TaskCompletionSource<byte[]?>()
-        };
-        _thumbnailGenerationQueue.Enqueue(threadWorkItem);
-        RunThumbnailProcessingThreads();
-        return threadWorkItem.Result.Task;
-    }
-
-    public void ClearSnapshotFrameQueue()
-    {
-        _snapshotFrameGenerationQueue.Clear();
-    }
-    
-    public Task<byte[]?> QueueSnapshotFrameAsync(MediaInfo mediaInfo, long positionMilliseconds, 
-        CancellationToken cancellationToken = default)
-    {
-        var threadWorkItem = new ThreadWorkItem<(MediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>
-        {
-            WorkItem = (mediaInfo, positionMilliseconds),
-            Result = new TaskCompletionSource<byte[]?>(),
-            CancellationToken = cancellationToken
-        };
-        _snapshotFrameGenerationQueue.Enqueue(threadWorkItem);
-        RunSnapshotFrameProcessingThreads();
-        return threadWorkItem.Result.Task;
-    }
-
+    /// <summary>
+    /// The thumbnail processing thread function.
+    /// Processes the queue.
+    /// </summary>
     private void ProcessThumbnailQueue()
     {
         var appSettings = _appSettingsService.GetSettings();
         
+        var avFilterString = _avFilterFactory.BuildAvFilter(
+            new AvFilterFrameSelectCondition() { KeyFramesOnly = true }, AvFilterFrameRotation.Zero);
+        
         while (_thumbnailGenerationQueue.TryDequeue(out var threadWorkItem))
         {
-            var mediaInfo = threadWorkItem.WorkItem;
+            var (mediaInfo, timePosMs) = threadWorkItem.WorkItem;
             var tmpThumbFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
-            var thumbTimePosition = appSettings.ThumbnailAtPosition / 100.0 * mediaInfo.DurationSeconds;
+            var thumbTimePosition = timePosMs / 1000.0;
+            
             var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
-            [
-                "-skip_frame", "nokey",
-                "-ss", $"{TimeSpan.FromSeconds(thumbTimePosition):hh\\:mm\\:ss}",
-                "-i", mediaInfo.Filename,
-                "-y",
-                "-vsync", "0",
-                "-filter_complex", _singleFrameAvFilter,
-                "-map", "[OUTPUT_FRAME]",
-                "-frames:v", "1",
-                "-f", "image2",
-                "-s", "336x199",
-                tmpThumbFilePath
-            ]);
-            processStartInfo.CreateNoWindow = true;
+                [
+                    "-loglevel", "8",
+                    "-discard", "nokey",
+                    "-y",
+                    "-ss", $"{TimeSpan.FromSeconds(thumbTimePosition):hh\\:mm\\:ss}",
+                    "-i", mediaInfo.Filename,
+                    "-vsync", "0",
+                    "-filter_complex", avFilterString,
+                    "-map", "[OUTPUT_FRAME]",
+                    "-frames:v", "1",
+                    "-f", "image2",
+                    "-s", "336x199",
+                    tmpThumbFilePath
+                ])
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
 
+                
             try
             {
-                var process = Process.Start(processStartInfo);
-                process.WaitForExit();
+                var process = new Process()
+                {
+                    StartInfo = processStartInfo
+                };
+            
+                process.Start();
+                process!.WaitForExit();
                 if (process.ExitCode == 0 && File.Exists(tmpThumbFilePath))
                 {
                     var imgBytes = File.ReadAllBytes(tmpThumbFilePath);
@@ -161,126 +142,6 @@ public class MediaPreviewService : IMediaPreviewService
             }
         }
             
-    }
-
-    private void ProcessSnapshotFrameQueue()
-    {
-        var appSettings = _appSettingsService.GetSettings();
-
-        while (_snapshotFrameGenerationQueue.TryDequeue(out var threadWorkItem))
-        {
-            if (threadWorkItem.CancellationToken.IsCancellationRequested)
-            {
-                threadWorkItem.Result.TrySetResult(null);
-                continue;
-            }
-
-            var (mediaInfo, timePosMs) = threadWorkItem.WorkItem;
-            var frameTimePosition = TimeSpan.FromSeconds(timePosMs / 1000.0).ToString(@"hh\:mm\:ss\.fff");
-            var tmpFrameFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
-            
-            var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
-            [
-                "-accurate_seek",
-                "-skip_frame", "nokey",
-                "-ss", frameTimePosition,
-                "-i", mediaInfo.Filename,
-                "-y",
-                "-vsync", "0",
-                "-filter_complex", _singleFrameAvFilter,
-                "-map", "[OUTPUT_FRAME]",
-                "-frames:v", "1",
-                "-f", "image2",
-                "-s", "672x398",
-                tmpFrameFilePath
-            ]);
-            processStartInfo.CreateNoWindow = true;
-            processStartInfo.RedirectStandardError = true;
-
-            try
-            {
-                var process = Process.Start(processStartInfo);
-                var t = process!.WaitForExitAsync(threadWorkItem.CancellationToken);
-                t.Wait();
-                if (process.ExitCode == 0 && File.Exists(tmpFrameFilePath))
-                {
-                    var imgBytes = File.ReadAllBytes(tmpFrameFilePath);
-                    File.Delete(tmpFrameFilePath);
-                    threadWorkItem.Result.TrySetResult(imgBytes);
-                }
-                else
-                {
-                    Console.WriteLine(process.StandardError.ReadToEnd());
-                    Console.WriteLine(process.ExitCode);
-                    threadWorkItem.Result.TrySetResult(null);
-                }
-            }
-            catch (TaskCanceledException e)
-            {
-                Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
-            }
-            catch (Exception e)
-            {
-                // TODO handle this
-                threadWorkItem.Result.TrySetResult(null);
-                Console.WriteLine("Error: " + e.Message);
-            }
-
-        }
-    }
-    
-    
-    private void LoadSingleFrameAvFilter()
-    {
-        if (_singleFrameAvFilter == string.Empty)
-        {
-            using var resourceStream = AssetLoader.Open(
-                new Uri("avares://VideoConversionApp/Resources/360-to-equirect.avfilter"));
-            using var reader = new StreamReader(resourceStream);
-            _singleFrameAvFilter = reader.ReadToEnd();
-        }
-    }
-
-    public async Task<byte[]?> GenerateThumbnailAsync(MediaInfo mediaInfo)
-    {
-        var tmpThumbFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
-        
-        var appSettings = _appSettingsService.GetSettings();
-        var thumbTimePosition = appSettings.ThumbnailAtPosition / 100.0 * mediaInfo.DurationSeconds;
-        var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
-        [
-            "-skip_frame", "nokey",
-            "-ss", $"{TimeSpan.FromSeconds(thumbTimePosition):hh\\:mm\\:ss}",
-            "-i", mediaInfo.Filename,
-            "-y",
-            "-vsync", "0",
-            "-filter_complex", _singleFrameAvFilter,
-            "-map", "[OUTPUT_FRAME]",
-            "-frames:v", "1",
-            "-f", "image2",
-            "-s", "336x199",
-            tmpThumbFilePath
-        ]);
-        processStartInfo.CreateNoWindow = true;
-
-        try
-        {
-            var process = Process.Start(processStartInfo);
-            await process!.WaitForExitAsync();
-            if (process.ExitCode == 0 && File.Exists(tmpThumbFilePath))
-            {
-                var imgBytes = await File.ReadAllBytesAsync(tmpThumbFilePath);
-                File.Delete(tmpThumbFilePath);
-                return imgBytes;
-            }
-
-            return null;
-        }
-        catch (Exception e)
-        {
-            return null;
-        }
-
     }
 
     public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, int numberOfFrames, 
@@ -311,13 +172,11 @@ public class MediaPreviewService : IMediaPreviewService
         
         var tmpFrameFilePath = Path.Combine(tempPath, "snapshot-%06d.jpg");
 
-        // TODO apply these settings everywhere!
         var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
             [
-                //"-skip_frame", "nokey",
+                "-loglevel", "8",
                 "-discard", "nokey",
                 "-y",
-                "-loglevel", "8",
                 "-progress", "pipe:1",
                 "-stats_period", "0.25",
                 "-vsync", "0",
@@ -395,7 +254,6 @@ public class MediaPreviewService : IMediaPreviewService
             throw;
         }
         
-        return Array.Empty<byte[]>();
         
     }
 }

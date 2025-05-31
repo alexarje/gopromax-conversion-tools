@@ -73,14 +73,18 @@
         
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="10 0 10 0">
           <Grid ColumnDefinitions="Auto, *" Margin="0 4 0 0">
-            <ToggleButton Classes="basic-transparent" Grid.Column="0" ToolTip.Tip="Auto-render on changes" Height="30">
+            <ToggleButton Classes="basic-transparent" Grid.Column="0" ToolTip.Tip="Auto-render on changes" Height="30"
+              IsChecked="{Binding AutoRenderOnChanges}">
               <ToggleButton.Content>
                 <PathIcon Data="{DynamicResource arrow_clockwise_regular}"></PathIcon>
               </ToggleButton.Content>
             </ToggleButton>
             <Panel Grid.Column="1">
               <ProgressBar ShowProgressText="false" Value="{Binding SnapshotRenderProgress}" Margin="4 0 0 0"></ProgressBar>
-              <Button Name="RenderSnapshotFrameImagesButton" Margin="4 0 0 0" Background="rgba(100,100,100,100)">Render</Button>
+              <Button Name="RenderSnapshotFrameImagesButton" 
+                Margin="4 0 0 0" 
+                Background="rgba(100,100,100,100)"
+                Command="{Binding RenderSnapshotFramesAsync}">Render</Button>
             </Panel>
           </Grid>
         </StackPanel>

@@ -40,7 +40,7 @@ public class AvFilterFactory : IAvFilterFactory
         if (frameDistance > 0)
         {
             frameDistance = Math.Max(1, Math.Round(frameDistance, 1));
-            frameDistanceExpression = $"select=isnan(prev_selected_t)+gte(t-prev_selected_t\\,{frameDistance})";
+            frameDistanceExpression = $"isnan(prev_selected_t)+gte(t-prev_selected_t\\,{frameDistance})";
         }
 
         var expressionParts = new List<string>();
@@ -49,7 +49,9 @@ public class AvFilterFactory : IAvFilterFactory
         if (keyFrameExpression != string.Empty)
             expressionParts.Add(keyFrameExpression);
         
-        var frameSelectionExpression = string.Join("*", expressionParts) + ",";
+        var frameSelectionExpression = expressionParts.Count > 0 
+            ? "select=" + string.Join("*", expressionParts) + "," 
+            : string.Empty;
         filter = filter.Replace("{FRAME_SELECT_EXPRESSION}", frameSelectionExpression);
         
         // Rotation.
