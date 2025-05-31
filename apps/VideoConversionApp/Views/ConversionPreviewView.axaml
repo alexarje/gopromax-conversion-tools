@@ -4,7 +4,7 @@
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:components="clr-namespace:VideoConversionApp.Views.Components"
   xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
-  mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="450"
+  mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="750"
   x:Class="VideoConversionApp.Views.ConversionPreviewView"
   x:DataType="vm:ConversionPreviewViewModel">
 
@@ -45,7 +45,6 @@
         </TextBlock>
 
         <Panel Grid.Row="1" Grid.Column="0" Margin="10 0 10 0">
-          <!-- dynamic, generate frames, then change the source -->
 
           <Image Name="SnapshotFrameImage" Source="{Binding CurrentSnapshotFrameImage}" 
             MinHeight="300" Stretch="Uniform">
@@ -68,10 +67,13 @@
           </Button>
         </Panel>
           
+        
         <components:VideoPlayerView Grid.Row="1" Grid.Column="1" Margin="10 0 10 0" 
           Height="{Binding Path=Height, ElementName=SnapshotFrameImage}" />
         
+        
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="10 0 10 0">
+          
           <Grid ColumnDefinitions="Auto, *" Margin="0 4 0 0">
             <ToggleButton Classes="basic-transparent" Grid.Column="0" ToolTip.Tip="Auto-render on changes" Height="30"
               IsChecked="{Binding AutoRenderOnChanges}">
@@ -84,9 +86,37 @@
               <Button Name="RenderSnapshotFrameImagesButton" 
                 Margin="4 0 0 0" 
                 Background="rgba(100,100,100,100)"
-                Command="{Binding RenderSnapshotFramesAsync}">Render</Button>
+                Command="{Binding OnRenderSnapshotFramesAsync}">Render</Button>
             </Panel>
           </Grid>
+          
+          <TextBlock Classes="control-group-heading" Margin="4 20 0 10">Orientation (transform)</TextBlock>
+          <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3">
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="*,*,*" Classes="orientation-controls-grid">
+              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Yaw</TextBlock>
+              <Slider Name="TransformYawSlider" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" 
+                IsSnapToTickEnabled="True" TickFrequency="1"
+                Minimum="-180" Maximum="180" Value="{Binding TransformYawValue}"></Slider>
+              <NumericUpDown Name="TransformYawBox" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
+                Minimum="-180" Maximum="180" Value="{Binding TransformYawValue}"></NumericUpDown>
+              
+              <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">Pitch</TextBlock>
+              <Slider Name="TransformPitchSlider" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" 
+                IsSnapToTickEnabled="True" TickFrequency="1"
+                Minimum="-90" Maximum="90" Value="{Binding TransformPitchValue}"></Slider>
+              <NumericUpDown Name="TransformPitchBox" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center"
+                Minimum="-90" Maximum="90" Value="{Binding TransformPitchValue}"></NumericUpDown>
+              
+              <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Roll</TextBlock>
+              <Slider Name="TransformRollSlider" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" 
+                IsSnapToTickEnabled="True" TickFrequency="1"
+                Minimum="-180" Maximum="180" Value="{Binding TransformRollValue}"></Slider>
+              <NumericUpDown Name="TransformRollBox" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center"
+                Minimum="-180" Maximum="180" Value="{Binding TransformRollValue}"></NumericUpDown>
+            </Grid>
+            
+          </Border>
+          
         </StackPanel>
         
         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="10 0 10 0">

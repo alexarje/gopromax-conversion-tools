@@ -20,8 +20,8 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
 
     public IList<IImage> SnapshotFrameImages { get; set; } = [];
 
-    [ObservableProperty]
-    public partial ConvertibleVideoModel? VideoModel { get; set; }
+    [ObservableProperty] 
+    public partial ConvertibleVideoModel VideoModel { get; set; } = null!;
     [ObservableProperty]
     public partial IImage? CurrentSnapshotFrameImage { get; set; }
     [ObservableProperty]
@@ -30,7 +30,37 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     public partial bool BlurImageVisible { get; set; }
     [ObservableProperty]
     public partial bool AutoRenderOnChanges { get; set; }
+
+    public int TransformYawValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            VideoModel.FrameRotation.Yaw = value;
+        }
+    }
     
+    public int TransformPitchValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            VideoModel.FrameRotation.Pitch = value;
+        }
+    }
+    
+    public int TransformRollValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            VideoModel.FrameRotation.Roll = value;
+        }
+    }
+
     private CancellationTokenSource? _snapshotGenerationCts;
     
     public ConversionPreviewViewModel(IServiceProvider serviceProvider,
@@ -66,7 +96,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             return;
 
         await RenderSnapshotFramesAsync();
-
+        NextFrame();
     }
 
     [RelayCommand]
@@ -99,7 +129,6 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     /// Renders/generates the snapshot frames from the currently active video.
     /// Removes the blur image upon success.
     /// </summary>
-    [RelayCommand]
     public async Task RenderSnapshotFramesAsync()
     {
         // If there's already this operation in progress, cancel the previous one.
@@ -111,10 +140,15 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         
         var frameCount = _appSettingsService.GetSettings().NumberOfSnapshotFrames;
         
+        
         try
         {
-            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(VideoModel!.MediaInfo, frameCount,
-                (progress) => SnapshotRenderProgress = progress, myCts.Token);
+            var transformationSettings = new SnapshotFrameTransformationSettings()
+            {
+                Rotation = VideoModel.FrameRotation
+            };
+            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(VideoModel.MediaInfo,
+                transformationSettings, frameCount, (progress) => SnapshotRenderProgress = progress, myCts.Token);
 
             var bitmaps = new IImage[bitmapBytes.Count];
             for (int i = 0; i < bitmapBytes.Count; i++)
@@ -125,7 +159,6 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
 
             SnapshotFrameImages = bitmaps.ToList();
             BlurImageVisible = false;
-            NextFrame();
         }
         catch (TaskCanceledException)
         {
@@ -137,5 +170,17 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             Console.WriteLine(e);
         }
 
+    }
+
+    [RelayCommand]
+    public async Task OnRenderSnapshotFramesAsync()
+    {
+        var frameIndex = SnapshotFrameImages.IndexOf(CurrentSnapshotFrameImage);
+        await RenderSnapshotFramesAsync();
+        if (frameIndex != -1 && frameIndex <= SnapshotFrameImages.Count)
+            CurrentSnapshotFrameImage = SnapshotFrameImages[frameIndex];
+        else
+            NextFrame();
+        
     }
 }

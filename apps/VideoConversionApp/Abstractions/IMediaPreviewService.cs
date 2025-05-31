@@ -20,9 +20,8 @@ public interface IMediaPreviewService
     /// <param name="progressCallback">Optional callback for receiving progress info</param>
     /// <param name="cancellationToken">Token for cancelling the process</param>
     /// <returns>A list of generated frames (images as byte arrays) when generation is complete</returns>
-    Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, int numberOfFrames,
-        Action<double>? progressCallback = null,
-        CancellationToken cancellationToken = default);
+    Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, SnapshotFrameTransformationSettings settings, 
+        int numberOfFrames, Action<double>? progressCallback = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Queues the generation of a video thumbnail of a GoPro Max 360 video.

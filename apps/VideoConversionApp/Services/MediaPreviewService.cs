@@ -144,7 +144,8 @@ public class MediaPreviewService : IMediaPreviewService
             
     }
 
-    public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, int numberOfFrames, 
+    public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, 
+        SnapshotFrameTransformationSettings settings, int numberOfFrames, 
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
@@ -158,12 +159,7 @@ public class MediaPreviewService : IMediaPreviewService
         {
             FrameDistance = skipLength / 1000,
             KeyFramesOnly = true
-        }, new AvFilterFrameRotation()
-        {
-            Pitch = 0,
-            Roll = 0,
-            Yaw = 0
-        });
+        }, settings.Rotation);
         
         // TODO caching
         var genId = Guid.NewGuid();

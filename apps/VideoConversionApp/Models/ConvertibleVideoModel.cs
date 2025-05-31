@@ -13,6 +13,7 @@ public class ConvertibleVideoModel
     public ConvertibleVideoModel(MediaInfo mediaInfo)
     {
         MediaInfo = mediaInfo;
+        FrameRotation = AvFilterFrameRotation.Zero;
     }
     
     
