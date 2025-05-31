@@ -53,8 +53,8 @@
                 <Thumb.Template>
                   <ControlTemplate>
                     <Grid>
-                      <Rectangle Width="4"
-                        Height="16"
+                      <Rectangle Width="8"
+                        Height="20"
                         Fill="{DynamicResource ThemeAccentBrush}" />
                     </Grid>
                   </ControlTemplate>

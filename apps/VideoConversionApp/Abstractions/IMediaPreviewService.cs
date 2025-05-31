@@ -32,4 +32,15 @@ public interface IMediaPreviewService
     /// Note that since the task is queued, awaiting for it may take a long time.
     /// </returns>
     Task<byte[]?> QueueThumbnailGenerationAsync(MediaInfo mediaInfo, long timePositionMilliseconds);
+
+    /// <summary>
+    /// Generates a keyframe video out of the specified input.
+    /// </summary>
+    /// <param name="convertibleVideo">Video model with conversion settings</param>
+    /// <param name="progressCallback">Optional callback for receiving progress info</param>
+    /// <param name="cancellationToken">Token for cancelling the process</param>
+    /// <returns>Generated video information</returns>
+    Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(ConvertibleVideoModel convertibleVideo,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default);
 }

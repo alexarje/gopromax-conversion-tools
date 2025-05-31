@@ -69,7 +69,8 @@
           
         
         <components:VideoPlayerView Grid.Row="1" Grid.Column="1" Margin="10 0 10 0" 
-          Height="{Binding Path=Height, ElementName=SnapshotFrameImage}" />
+          Height="{Binding Path=Height, ElementName=SnapshotFrameImage}"
+          DataContext="{Binding KeyFrameVideoPlayerViewModel}"/>
         
         
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Vertical" Margin="10 0 10 0">
@@ -78,7 +79,7 @@
             <ToggleButton Classes="basic-transparent" Grid.Column="0" ToolTip.Tip="Auto-render on changes" Height="30"
               IsChecked="{Binding AutoRenderOnChanges}">
               <ToggleButton.Content>
-                <PathIcon Data="{DynamicResource arrow_clockwise_regular}"></PathIcon>
+                <PathIcon Data="{StaticResource arrow_clockwise_regular}"></PathIcon>
               </ToggleButton.Content>
             </ToggleButton>
             <Panel Grid.Column="1">
@@ -92,13 +93,17 @@
           
           <TextBlock Classes="control-group-heading" Margin="4 20 0 10">Orientation (transform)</TextBlock>
           <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3">
-            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="*,*,*" Classes="orientation-controls-grid">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="*,*,*" Classes="orientation-controls-grid">
               <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Yaw</TextBlock>
               <Slider Name="TransformYawSlider" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" 
                 IsSnapToTickEnabled="True" TickFrequency="1" Cursor="SizeWestEast"
                 Minimum="-180" Maximum="180" Value="{Binding TransformYawValue}"></Slider>
               <NumericUpDown Name="TransformYawBox" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
                 Minimum="-180" Maximum="180" Value="{Binding TransformYawValue}"></NumericUpDown>
+              <Button Grid.Row="0" Grid.Column="3" CornerRadius="3" Width="22" Height="22" Margin="8 0 0 0"
+                ToolTip.Tip="Reset to 0" Command="{Binding ResetYawCommand}">
+                <PathIcon Data="{StaticResource arrow_sync_off_regular}" Width="12"></PathIcon>
+              </Button>
               
               <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">Pitch</TextBlock>
               <Slider Name="TransformPitchSlider" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" 
@@ -106,6 +111,10 @@
                 Minimum="-90" Maximum="90" Value="{Binding TransformPitchValue}"></Slider>
               <NumericUpDown Name="TransformPitchBox" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center"
                 Minimum="-90" Maximum="90" Value="{Binding TransformPitchValue}"></NumericUpDown>
+              <Button Grid.Row="1" Grid.Column="3" CornerRadius="3" Width="22" Height="22" Margin="8 0 0 0"
+                ToolTip.Tip="Reset to 0" Command="{Binding ResetPitchCommand}">
+                <PathIcon Data="{StaticResource arrow_sync_off_regular}" Width="12"></PathIcon>
+              </Button>
               
               <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Roll</TextBlock>
               <Slider Name="TransformRollSlider" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" 
@@ -113,6 +122,11 @@
                 Minimum="-180" Maximum="180" Value="{Binding TransformRollValue}"></Slider>
               <NumericUpDown Name="TransformRollBox" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center"
                 Minimum="-180" Maximum="180" Value="{Binding TransformRollValue}"></NumericUpDown>
+              <Button Grid.Row="2" Grid.Column="3" CornerRadius="3" Width="22" Height="22" Margin="8 0 0 0"
+                ToolTip.Tip="Reset to 0" Command="{Binding ResetRollCommand}">
+                <PathIcon Data="{StaticResource arrow_sync_off_regular}" Width="12"></PathIcon>
+              </Button>
+              
             </Grid>
             
           </Border>
@@ -122,8 +136,10 @@
         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="10 0 10 0">
           <Grid ColumnDefinitions="*" Margin="0 4 0 0">
             <Panel Grid.Column="0" Height="30">
-              <ProgressBar ShowProgressText="false" Value="0" Margin="0 0 0 0"></ProgressBar>
-              <Button Name="xxx" Margin="0 0 0 0" Background="rgba(100,100,100,100)">Render</Button>
+              <ProgressBar ShowProgressText="false" Value="{Binding KeyFrameVideoRenderProgress}" 
+                Margin="0 0 0 0" />
+              <Button Name="RenderKeyFrameVideoButton" Margin="0 0 0 0" Background="rgba(100,100,100,100)"
+                Command="{Binding RenderKeyFrameVideoCommand}">Render</Button>
             </Panel>
           </Grid>
         </StackPanel>

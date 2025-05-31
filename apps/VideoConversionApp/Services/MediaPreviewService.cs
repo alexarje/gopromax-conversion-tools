@@ -7,8 +7,12 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using TagLib;
+using TagLib.Mpeg4;
+using TagLib.Xmp;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
+using File = System.IO.File;
 
 namespace VideoConversionApp.Services;
 
@@ -250,6 +254,106 @@ public class MediaPreviewService : IMediaPreviewService
             throw;
         }
         
+        
+    }
+
+    public async Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(ConvertibleVideoModel convertibleVideo,
+        Action<double>? progressCallback = null,
+        CancellationToken cancellationToken = default)
+    {
+        var mediaInfo = convertibleVideo.MediaInfo;
+        var rotation = convertibleVideo.FrameRotation;
+        var appSettings = _appSettingsService.GetSettings();
+
+        var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
+        {
+            KeyFramesOnly = true
+        }, rotation);
+        
+        var genId = Guid.NewGuid();
+        var tempPath = Path.Combine(Path.GetTempPath(), "kfv-" + genId.ToString());
+        Directory.CreateDirectory(tempPath);
+        
+        var tmpVideoFilePath = Path.Combine(tempPath, "keyframevideo.mp4");
+
+        var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
+            [
+                "-loglevel", "8",
+                "-discard", "nokey",
+                "-y",
+                "-progress", "pipe:1",
+                "-stats_period", "0.25",
+                "-vsync", "0",
+                "-filter_complex", avFilterString,
+                "-i", mediaInfo.Filename,
+                "-map", "[OUTPUT_FRAME]",
+                "-c:v", "prores",
+                "-f", "mov",
+                "-s", "672x398",
+                "-movflags", "+faststart",
+                tmpVideoFilePath
+            ])
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            
+        
+        try
+        {
+            var process = new Process()
+            {
+                StartInfo = processStartInfo,
+                EnableRaisingEvents = true
+            };
+            process.Start();
+            cancellationToken.Register(() => process.Kill());
+
+            process.BeginOutputReadLine();
+            progressCallback?.Invoke(2);
+
+            process!.OutputDataReceived += (sender, args) =>
+            {
+                Console.WriteLine(args.Data);
+                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
+                {
+                    var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
+                    var progress = frameTime.TotalMilliseconds / mediaInfo.DurationMilliseconds;
+                    progressCallback?.Invoke(Math.Round(progress * 100.0, 2));
+                }
+                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
+                {
+                    progressCallback?.Invoke(100.0);
+                }
+            };
+            await process!.WaitForExitAsync(cancellationToken);
+            if (process.ExitCode == 0 && File.Exists(tmpVideoFilePath))
+            {
+                return new KeyFrameVideo()
+                {
+                    VideoPath = tmpVideoFilePath
+                };
+            }
+            else
+            {
+                Console.WriteLine(process.StandardError.ReadToEnd());
+                Console.WriteLine(process.ExitCode);
+                
+                throw new Exception($"Ffmpeg process returned {process.ExitCode}");
+            }
+        }
+        catch (TaskCanceledException e)
+        {
+            Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+            throw;
+        }
+        catch (Exception e)
+        {
+            // TODO handle this
+            Console.WriteLine("Exception: " + e.Message);
+            throw;
+        }
         
     }
 }

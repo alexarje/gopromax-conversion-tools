@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
+using VideoConversionApp.ViewModels.Components;
 
 namespace VideoConversionApp.ViewModels;
 
@@ -28,9 +29,14 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     [ObservableProperty]
     public partial double SnapshotRenderProgress { get; set; }
     [ObservableProperty]
+    public partial double KeyFrameVideoRenderProgress { get; set; }
+    [ObservableProperty]
     public partial bool BlurImageVisible { get; set; }
     [ObservableProperty]
     public partial bool AutoRenderOnChanges { get; set; }
+    
+    [ObservableProperty]
+    public partial VideoPlayerViewModel KeyFrameVideoPlayerViewModel { get; set; }
 
     public int TransformYawValue
     {
@@ -78,6 +84,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     {
         _mediaPreviewService = mediaPreviewService;
         _appSettingsService = appSettingsService;
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel();
     }
 
     /// <summary>
@@ -103,6 +110,13 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         if (videoModel == null)
             return;
 
+        var prevAutoRenderSetting = AutoRenderOnChanges;
+        AutoRenderOnChanges = false;
+        TransformPitchValue = videoModel.FrameRotation.Pitch;
+        TransformYawValue = videoModel.FrameRotation.Yaw;
+        TransformRollValue = videoModel.FrameRotation.Roll;
+        AutoRenderOnChanges = prevAutoRenderSetting;
+        
         await RenderSnapshotFramesAsync();
         NextFrame();
     }
@@ -191,6 +205,24 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             NextFrame();
     }
 
+    [RelayCommand]
+    public void ResetYaw()
+    {
+        TransformYawValue = 0;
+    }
+    
+    [RelayCommand]
+    public void ResetPitch()
+    {
+        TransformPitchValue = 0;
+    }
+    
+    [RelayCommand]
+    public void ResetRoll()
+    {
+        TransformRollValue = 0;
+    }
+
     private async Task LiveUpdateSnapshot()
     {
         if (_snapshotLiveUpdateCts != null && !_snapshotLiveUpdateCts.Token.IsCancellationRequested)
@@ -207,6 +239,25 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         }
 
         await OnRenderSnapshotFramesAsync();
+    }
 
+    [RelayCommand]
+    public async Task RenderKeyFrameVideoAsync()
+    {
+        try
+        {
+            var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(VideoModel,
+                (progress) => KeyFrameVideoRenderProgress = progress, CancellationToken.None);
+
+            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel()
+            {
+                VideoUri = new Uri(keyFrameVideo.VideoPath)
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        
     }
 }

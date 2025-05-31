@@ -33,9 +33,9 @@ public partial class VideoPlayerView : UserControl, IDisposable
         // up as a popup after tab change.
         Player.AttachedToVisualTree += PlayerOnAttachedToVisualTree;
         
-        _mediaPlayer = new MediaPlayer(_libVlc);
+        _mediaPlayer = new MediaPlayer(_libVlc) { EnableHardwareDecoding = true };
         Player.MediaPlayer = _mediaPlayer;
-        DataContext = new VideoPlayerViewModel(); // TODO temporary
+        // DataContext = new VideoPlayerViewModel(); // TODO temporary
     }
 
     private void PlayerOnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -50,7 +50,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         {
             if(_mediaPlayer.Media != null)
                 _mediaPlayer.Media.Dispose();
-            
+
             _mediaPlayer.Media = new Media(_libVlc, vm.VideoUri);
         }
     }
