@@ -46,7 +46,18 @@
 
         <Panel Grid.Row="1" Grid.Column="0" Margin="10 0 10 0">
           <!-- dynamic, generate frames, then change the source -->
-          <Image Name="SnapshotFrameImage" Source="{Binding CurrentSnapshotFrameImage}" MinHeight="300" Stretch="Uniform" />
+
+          <Image Name="SnapshotFrameImage" Source="{Binding CurrentSnapshotFrameImage}" 
+            MinHeight="300" Stretch="Uniform">
+          </Image>
+          <Border ClipToBounds="True">
+            <Image Name="SnapshotFrameImageBg" Source="{Binding CurrentSnapshotFrameImage}" 
+              MinHeight="300" Stretch="Uniform" ClipToBounds="True" IsVisible="{Binding BlurImageVisible}">
+              <Image.Effect>
+                <BlurEffect Radius="30" />
+              </Image.Effect>
+            </Image>
+          </Border>
           <Button Classes="frame-next-prev-button" Width="40" Height="120" HorizontalAlignment="Left"
             Command="{Binding PreviousFrame}">
             <PathIcon Data="{StaticResource chevron_left_regular}" />

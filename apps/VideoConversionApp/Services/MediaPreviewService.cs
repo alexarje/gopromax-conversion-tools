@@ -317,7 +317,7 @@ public class MediaPreviewService : IMediaPreviewService
                 //"-skip_frame", "nokey",
                 "-discard", "nokey",
                 "-y",
-                //"-loglevel", "8",
+                "-loglevel", "8",
                 "-progress", "pipe:1",
                 "-stats_period", "0.25",
                 "-vsync", "0",
@@ -331,13 +331,9 @@ public class MediaPreviewService : IMediaPreviewService
             {
                 CreateNoWindow = true,
                 UseShellExecute = false,
-                RedirectStandardInput = true,
-                //RedirectStandardError = true,
                 RedirectStandardOutput = true
             };
             
-
-        
         
         try
         {
@@ -347,8 +343,10 @@ public class MediaPreviewService : IMediaPreviewService
                 EnableRaisingEvents = true
             };
             process.Start();
-            //process.BeginErrorReadLine();
+            cancellationToken.Register(() => process.Kill());
+
             process.BeginOutputReadLine();
+            progressCallback?.Invoke(5);
 
             process!.OutputDataReceived += (sender, args) =>
             {
@@ -381,16 +379,20 @@ public class MediaPreviewService : IMediaPreviewService
             {
                 Console.WriteLine(process.StandardError.ReadToEnd());
                 Console.WriteLine(process.ExitCode);
+                
+                throw new Exception($"Ffmpeg process returned {process.ExitCode}");
             }
         }
         catch (TaskCanceledException e)
         {
             Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+            throw;
         }
         catch (Exception e)
         {
             // TODO handle this
-            Console.WriteLine("Error: " + e.Message);
+            Console.WriteLine("Exception: " + e.Message);
+            throw;
         }
         
         return Array.Empty<byte[]>();
