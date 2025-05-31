@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -38,6 +39,8 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         {
             SetProperty(ref field, value);
             VideoModel.FrameRotation.Yaw = value;
+            if (AutoRenderOnChanges)
+                _ = LiveUpdateSnapshot();
         }
     }
     
@@ -48,6 +51,8 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         {
             SetProperty(ref field, value);
             VideoModel.FrameRotation.Pitch = value;
+            if (AutoRenderOnChanges)
+                _ = LiveUpdateSnapshot();
         }
     }
     
@@ -58,10 +63,14 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         {
             SetProperty(ref field, value);
             VideoModel.FrameRotation.Roll = value;
+            if (AutoRenderOnChanges)
+                _ = LiveUpdateSnapshot();
         }
     }
 
     private CancellationTokenSource? _snapshotGenerationCts;
+    
+    private CancellationTokenSource? _snapshotLiveUpdateCts;
     
     public ConversionPreviewViewModel(IServiceProvider serviceProvider,
         IMediaPreviewService mediaPreviewService,
@@ -91,7 +100,6 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             CurrentSnapshotFrameImage = initialPreviewImage;
             SnapshotFrameImages = [initialPreviewImage];
         }
-
         if (videoModel == null)
             return;
 
@@ -181,6 +189,24 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             CurrentSnapshotFrameImage = SnapshotFrameImages[frameIndex];
         else
             NextFrame();
-        
+    }
+
+    private async Task LiveUpdateSnapshot()
+    {
+        if (_snapshotLiveUpdateCts != null && !_snapshotLiveUpdateCts.Token.IsCancellationRequested)
+            _snapshotLiveUpdateCts.Cancel();
+
+        _snapshotLiveUpdateCts = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(250, _snapshotLiveUpdateCts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        await OnRenderSnapshotFramesAsync();
+
     }
 }
