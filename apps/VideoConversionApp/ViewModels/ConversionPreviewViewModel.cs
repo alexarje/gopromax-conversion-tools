@@ -170,6 +170,11 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         TransformYawValue = videoModel.FrameRotation.Yaw;
         TransformRollValue = videoModel.FrameRotation.Roll;
         AutoRenderOnChanges = prevAutoRenderSetting;
+
+        ResetPreviewFov();
+        ResetPreviewPitch();
+        ResetPreviewRoll();
+        ResetPreviewYaw();
         
         await RenderSnapshotFramesAsync();
         NextFrame();
@@ -298,7 +303,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     [RelayCommand]
     public void ResetPreviewFov()
     {
-        PreviewFovValue = 0;
+        PreviewFovValue = 80;
     }
 
 

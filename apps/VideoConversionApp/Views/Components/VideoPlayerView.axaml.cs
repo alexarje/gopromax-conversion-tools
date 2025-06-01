@@ -153,6 +153,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
         if (_isFoving)
         {
+            _fov = Player.MediaPlayer.Viewpoint.Fov;
             _fov = Math.Min(Math.Max(5, _fov + (float)(_fov * -movement.X / range)), 180);
             var vp = Player.MediaPlayer.Viewpoint;
             Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll, _fov);
@@ -199,6 +200,10 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
         _fov = _defaultFov;
         Player.MediaPlayer.UpdateViewpoint(0, 0, 0, _fov);
+        ViewModel.VideoPlayerFov = _defaultFov;
+        ViewModel.VideoPlayerRoll = 0;
+        ViewModel.VideoPlayerYaw = 0;
+        ViewModel.VideoPlayerPitch = 0;
     }
     
     private void Scrubber_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
