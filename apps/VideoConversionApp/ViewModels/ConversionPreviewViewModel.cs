@@ -84,7 +84,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     {
         _mediaPreviewService = mediaPreviewService;
         _appSettingsService = appSettingsService;
-        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel();
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(null);
     }
 
     /// <summary>
@@ -249,10 +249,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(VideoModel,
                 (progress) => KeyFrameVideoRenderProgress = progress, CancellationToken.None);
 
-            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel()
-            {
-                VideoUri = new Uri(keyFrameVideo.VideoPath)
-            };
+            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(keyFrameVideo);
         }
         catch (Exception e)
         {

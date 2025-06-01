@@ -1,11 +1,16 @@
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using LibVLCSharp.Avalonia;
 using LibVLCSharp.Shared;
+using VideoConversionApp.Utils;
 using VideoConversionApp.ViewModels;
 using VideoConversionApp.ViewModels.Components;
 
@@ -19,7 +24,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     private Point _previousMousePosition;
     private float _fov = 80;
     
-    private readonly LibVLC _libVlc = new LibVLC();
+    private readonly LibVLC _libVlc = new LibVLC(enableDebugLogs: true);
     private readonly MediaPlayer _mediaPlayer;
 
     private VideoPlayerViewModel? ViewModel => DataContext as VideoPlayerViewModel;
@@ -35,7 +40,15 @@ public partial class VideoPlayerView : UserControl, IDisposable
         
         _mediaPlayer = new MediaPlayer(_libVlc) { EnableHardwareDecoding = true };
         Player.MediaPlayer = _mediaPlayer;
-        // DataContext = new VideoPlayerViewModel(); // TODO temporary
+        _mediaPlayer.TimeChanged += MediaPlayerOnTimeChanged;
+    }
+    
+    private void MediaPlayerOnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
+    {
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            Scrubber.Value = e.Time / 1000.0;
+        });
     }
 
     private void PlayerOnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -51,7 +64,17 @@ public partial class VideoPlayerView : UserControl, IDisposable
             if(_mediaPlayer.Media != null)
                 _mediaPlayer.Media.Dispose();
 
-            _mediaPlayer.Media = new Media(_libVlc, vm.VideoUri);
+            if (vm.VideoUri != null)
+            {
+                // Duration is not available until we play, but we have that information
+                // in the KeyFrameVideo class.
+                Scrubber.Maximum = vm.KeyFrameVideo.SourceVideo.MediaInfo.DurationMilliseconds / 1000.0;
+                
+                var media = new Media(_libVlc, vm.VideoUri);
+                _mediaPlayer.Media = media;
+                _mediaPlayer.Play();
+                _mediaPlayer.SetPause(true);
+            }
         }
     }
 
@@ -138,6 +161,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     public void Dispose()
     {
         // TODO this is not called automatically, see https://github.com/AvaloniaUI/Avalonia/discussions/6556
+        // https://github.com/videolan/libvlcsharp/blob/3.x/docs/best_practices.md
         _libVlc.Dispose();
         _mediaPlayer.Dispose();
     }
@@ -148,5 +172,16 @@ public partial class VideoPlayerView : UserControl, IDisposable
             return;
 
         Player.MediaPlayer.UpdateViewpoint(0, 0, 0, _fov);
+    }
+    
+    private void Scrubber_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (!_mediaPlayer.IsPlaying)
+        {
+            Console.WriteLine("Seeking to " + e.NewValue);
+            _mediaPlayer.SeekTo(TimeSpan.FromSeconds(e.NewValue));
+        }
+        else
+            Console.WriteLine("Scrubber value updated to " + e.NewValue);
     }
 }

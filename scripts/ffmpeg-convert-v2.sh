@@ -181,6 +181,16 @@ exiftool -api LargeFileSupport=1 -overwrite_original -XMP-GSpherical:Spherical="
   -XMP-GSpherical:Stitched="true" -XMP-GSpherical:StitchingSoftware=dummy \
   -XMP-GSpherical:ProjectionType=equirectangular "$output_filepath"
 
+# Writes:
+# <rdf:SphericalVideo
+# xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+# xmlns:GSpherical='http://ns.google.com/videos/1.0/spherical/'>
+#  <GSpherical:ProjectionType>equirectangular</GSpherical:ProjectionType>
+#  <GSpherical:Spherical>True</GSpherical:Spherical>
+#  <GSpherical:Stitched>True</GSpherical:Stitched>
+#  <GSpherical:StitchingSoftware>dummy</GSpherical:StitchingSoftware>
+# </rdf:SphericalVideo>
+
 echo ""
 echo "================================================================================"
 echo "Completed."

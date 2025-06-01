@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
 
 namespace VideoConversionApp.Models;
 
@@ -7,19 +8,22 @@ namespace VideoConversionApp.Models;
 /// </summary>
 public struct AppSettings
 {
-    [JsonPropertyName("ffmpegPath")]
+    [YamlMember(Alias = "ffmpegPath")]
     public string FfmpegPath = "ffmpeg";
 
-    [JsonPropertyName("ffprobePath")]
+    [YamlMember(Alias = "ffprobePath")]
     public string FfprobePath = "ffprobe";
+    
+    [YamlMember(Alias = "exifToolPath")]
+    public string ExifToolPath = "exiftool";
 
-    [JsonPropertyName("thumbnailAtPosition")]
+    [YamlMember(Alias = "thumbnailAtPosition")]
     public int ThumbnailAtPosition = 50;
 
-    [JsonPropertyName("numberOfSnapshotFrames")]
+    [YamlMember(Alias = "numberOfSnapshotFrames")]
     public int NumberOfSnapshotFrames = 10;
     
-    [JsonPropertyName("numberOfThumbnailProcessingThreads")]
+    [YamlMember(Alias = "numberOfThumbnailProcessingThreads")]
     public int NumberOfThumbnailProcessingThreads = 3;
 
     public AppSettings()

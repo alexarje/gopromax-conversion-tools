@@ -7,9 +7,6 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using TagLib;
-using TagLib.Mpeg4;
-using TagLib.Xmp;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 using File = System.IO.File;
@@ -324,16 +321,47 @@ public class MediaPreviewService : IMediaPreviewService
                 }
                 if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
                 {
-                    progressCallback?.Invoke(100.0);
+                    progressCallback?.Invoke(98.0);
                 }
             };
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && File.Exists(tmpVideoFilePath))
             {
-                return new KeyFrameVideo()
+                var taggingProcessStartInfo = new ProcessStartInfo(appSettings.ExifToolPath,
+                    [
+                        "-api", "LargeFileSupport=1",
+                        "-overwrite_original",
+                        "-XMP-GSpherical:Spherical=true",
+                        "-XMP-GSpherical:Stitched=true",
+                        "-XMP-GSpherical:StitchingSoftware=MAXVideoConvert",
+                        "-XMP-GSpherical:ProjectionType=equirectangular",
+                        tmpVideoFilePath
+                    ])
                 {
-                    VideoPath = tmpVideoFilePath
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
                 };
+                var taggingProcess = new Process()
+                {
+                    StartInfo = taggingProcessStartInfo,
+                    EnableRaisingEvents = true
+                };
+                taggingProcess.Start();
+                cancellationToken.Register(() => taggingProcess.Kill());
+                
+                await taggingProcess!.WaitForExitAsync(cancellationToken);
+                progressCallback?.Invoke(100.0);
+                if (taggingProcess.ExitCode == 0)
+                {
+                    return new KeyFrameVideo()
+                    {
+                        VideoPath = tmpVideoFilePath,
+                        FramesGenerated = 0, // do we need it?
+                        SourceVideo = convertibleVideo
+                    };
+                }
+                throw new Exception($"ExifTool process returned {taggingProcess.ExitCode}");
             }
             else
             {
