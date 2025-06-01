@@ -20,9 +20,17 @@ public partial class VideoPlayerView : UserControl, IDisposable
 {
 
     private bool _isPanning = false;
+    public bool IsPanning => _isPanning;
+    
     private bool _isRolling = false;
+    public bool IsRolling => _isRolling;
+    
+    private bool _isFoving = false;
+    public bool IsFoving => _isFoving;
+    
     private Point _previousMousePosition;
     private float _fov = 80;
+    private readonly float _defaultFov = 80;
     
     private readonly LibVLC _libVlc = new LibVLC(enableDebugLogs: true);
     private readonly MediaPlayer _mediaPlayer;
@@ -64,6 +72,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
             if(_mediaPlayer.Media != null)
                 _mediaPlayer.Media.Dispose();
 
+            vm.AssociatedView = this;
+            
             if (vm.VideoUri != null)
             {
                 // Duration is not available until we play, but we have that information
@@ -82,6 +92,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     {
         var isRightClick = e.GetCurrentPoint(this).Properties.IsRightButtonPressed;
         var isLeftClick = e.GetCurrentPoint(this).Properties.IsLeftButtonPressed;
+        var isMiddleClick = e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed;
         
         if (isLeftClick)
         {
@@ -92,7 +103,11 @@ public partial class VideoPlayerView : UserControl, IDisposable
         {
             _isRolling = true;
         }
-        
+
+        if (isMiddleClick)
+        {
+            _isFoving = true;
+        }
 
         _previousMousePosition = e.GetCurrentPoint(this).Position;
     }
@@ -101,6 +116,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     {
         _isPanning = false;
         _isRolling = false;
+        _isFoving = false;
     }
 
     private void ControlsPanel_OnPointerMoved(object? sender, PointerEventArgs e)
@@ -112,7 +128,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         var movement = currentPosition - _previousMousePosition;
         _previousMousePosition = currentPosition;
 
-        double range = Math.Max(Bounds.Width, Bounds.Height);
+        double range = Bounds.Width;
         
         // Left mouse button down drag: pitch and yaw.
         if (_isPanning)
@@ -120,18 +136,28 @@ public partial class VideoPlayerView : UserControl, IDisposable
             float yaw = (float)(_fov * -movement.X / range);
             float pitch = (float)(_fov * -movement.Y / range);
 
-            var currentViewPoint = Player.MediaPlayer.Viewpoint;
-            Player.MediaPlayer.UpdateViewpoint(currentViewPoint.Yaw + yaw, currentViewPoint.Pitch + pitch, currentViewPoint.Roll, _fov);
+            var vp = Player.MediaPlayer.Viewpoint;
+            Player.MediaPlayer.UpdateViewpoint(vp.Yaw + yaw, vp.Pitch + pitch, vp.Roll, _fov);
+            ViewModel.VideoPlayerYaw = vp.Yaw + yaw;
+            ViewModel.VideoPlayerPitch = vp.Pitch + pitch;
         }
 
         // Right mouse button down: roll
         if (_isRolling)
         {
             float roll = (float)(_fov * -movement.X / range);
-            var currentViewPoint = Player.MediaPlayer.Viewpoint;
-            Player.MediaPlayer.UpdateViewpoint(currentViewPoint.Yaw, currentViewPoint.Pitch, currentViewPoint.Roll + roll, _fov);
+            var vp = Player.MediaPlayer.Viewpoint;
+            Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll + roll, _fov);
+            ViewModel.VideoPlayerRoll = vp.Roll + roll;
         }
-        
+
+        if (_isFoving)
+        {
+            _fov = Math.Min(Math.Max(5, _fov + (float)(_fov * -movement.X / range)), 180);
+            var vp = Player.MediaPlayer.Viewpoint;
+            Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll, _fov);
+            ViewModel.VideoPlayerFov = _fov;
+        }
     }
 
     private void StopClicked(object? sender, RoutedEventArgs e)
@@ -171,6 +197,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         if (Player?.MediaPlayer == null)
             return;
 
+        _fov = _defaultFov;
         Player.MediaPlayer.UpdateViewpoint(0, 0, 0, _fov);
     }
     

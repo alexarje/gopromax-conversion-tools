@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -71,6 +71,60 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             VideoModel.FrameRotation.Roll = value;
             if (AutoRenderOnChanges)
                 _ = LiveUpdateSnapshot();
+        }
+    }
+    
+    // For KeyFrameVideo Preview
+    
+    public int PreviewYawValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            if (KeyFrameVideoPlayerViewModel.AssociatedView.IsPanning)
+                return;
+            var mp = KeyFrameVideoPlayerViewModel.AssociatedView.Player.MediaPlayer;
+            mp?.UpdateViewpoint(value, mp.Viewpoint.Pitch, mp.Viewpoint.Roll, mp.Viewpoint.Fov);
+        }
+    }
+    
+    public int PreviewPitchValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            if (KeyFrameVideoPlayerViewModel.AssociatedView.IsPanning)
+                return;
+            var mp = KeyFrameVideoPlayerViewModel.AssociatedView.Player.MediaPlayer;
+            mp?.UpdateViewpoint(mp.Viewpoint.Yaw, value, mp.Viewpoint.Roll, mp.Viewpoint.Fov);
+        }
+    }
+    
+    public int PreviewRollValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            if (KeyFrameVideoPlayerViewModel.AssociatedView.IsRolling)
+                return;
+            var mp = KeyFrameVideoPlayerViewModel.AssociatedView.Player.MediaPlayer;
+            mp?.UpdateViewpoint(mp.Viewpoint.Yaw, mp.Viewpoint.Pitch, value, mp.Viewpoint.Fov);
+        }
+    }
+    
+    public int PreviewFovValue
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            if (KeyFrameVideoPlayerViewModel.AssociatedView.IsFoving)
+                return;
+            var mp = KeyFrameVideoPlayerViewModel.AssociatedView.Player.MediaPlayer;
+            mp?.UpdateViewpoint(mp.Viewpoint.Yaw, mp.Viewpoint.Pitch, mp.Viewpoint.Roll, value);
         }
     }
 
@@ -206,22 +260,47 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     }
 
     [RelayCommand]
-    public void ResetYaw()
+    public void ResetTransformYaw()
     {
         TransformYawValue = 0;
     }
     
     [RelayCommand]
-    public void ResetPitch()
+    public void ResetTransformPitch()
     {
         TransformPitchValue = 0;
     }
     
     [RelayCommand]
-    public void ResetRoll()
+    public void ResetTransformRoll()
     {
         TransformRollValue = 0;
     }
+    
+    [RelayCommand]
+    public void ResetPreviewYaw()
+    {
+        PreviewYawValue = 0;
+    }
+    
+    [RelayCommand]
+    public void ResetPreviewPitch()
+    {
+        PreviewPitchValue = 0;
+    }
+    
+    [RelayCommand]
+    public void ResetPreviewRoll()
+    {
+        PreviewRollValue = 0;
+    }
+    
+    [RelayCommand]
+    public void ResetPreviewFov()
+    {
+        PreviewFovValue = 0;
+    }
+
 
     private async Task LiveUpdateSnapshot()
     {
@@ -249,12 +328,30 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(VideoModel,
                 (progress) => KeyFrameVideoRenderProgress = progress, CancellationToken.None);
 
+            // Set the UserControl's bound ViewModel. Listen to its PropertyChanged events to sync the yaw/pitch/roll/fov
+            // from there to our properties.
+            if (KeyFrameVideoPlayerViewModel != null)
+                KeyFrameVideoPlayerViewModel.PropertyChanged -= OnVideoPlayerOriginatedViewPointPropertyChanged;
+            
             KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(keyFrameVideo);
+            KeyFrameVideoPlayerViewModel.PropertyChanged += OnVideoPlayerOriginatedViewPointPropertyChanged;
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
         }
         
+    }
+
+    private void OnVideoPlayerOriginatedViewPointPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerYaw)) 
+            PreviewYawValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerYaw;
+        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerPitch)) 
+            PreviewPitchValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerPitch;
+        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerRoll)) 
+            PreviewRollValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerRoll;
+        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerFov))
+            PreviewFovValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerFov;
     }
 }
