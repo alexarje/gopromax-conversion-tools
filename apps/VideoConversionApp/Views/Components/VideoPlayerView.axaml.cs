@@ -10,6 +10,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using LibVLCSharp.Avalonia;
 using LibVLCSharp.Shared;
+using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
 using VideoConversionApp.ViewModels;
 using VideoConversionApp.ViewModels.Components;
@@ -49,8 +50,16 @@ public partial class VideoPlayerView : UserControl, IDisposable
         _mediaPlayer = new MediaPlayer(_libVlc) { EnableHardwareDecoding = true };
         Player.MediaPlayer = _mediaPlayer;
         _mediaPlayer.TimeChanged += MediaPlayerOnTimeChanged;
+        
+        Player.SizeChanged += PlayerOnSizeChanged;
     }
-    
+
+    private void PlayerOnSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (ViewModel != null)
+            CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
+    }
+
     private void MediaPlayerOnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
     {
         Dispatcher.UIThread.Invoke(() =>
@@ -73,7 +82,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
                 _mediaPlayer.Media.Dispose();
 
             vm.AssociatedView = this;
-            
+            CalculateAndSetCropMarkerPositions(vm.SourceConvertibleVideo);
+
             if (vm.VideoUri != null)
             {
                 // Duration is not available until we play, but we have that information
@@ -84,6 +94,11 @@ public partial class VideoPlayerView : UserControl, IDisposable
                 _mediaPlayer.Media = media;
                 _mediaPlayer.Play();
                 _mediaPlayer.SetPause(true);
+            }
+            else
+            {
+                _mediaPlayer.Media = null;
+                _mediaPlayer.Stop();
             }
         }
     }
@@ -133,6 +148,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         // Left mouse button down drag: pitch and yaw.
         if (_isPanning)
         {
+            _fov = Player.MediaPlayer.Viewpoint.Fov;
             float yaw = (float)(_fov * -movement.X / range);
             float pitch = (float)(_fov * -movement.Y / range);
 
@@ -145,7 +161,9 @@ public partial class VideoPlayerView : UserControl, IDisposable
         // Right mouse button down: roll
         if (_isRolling)
         {
+            _fov = Player.MediaPlayer.Viewpoint.Fov;
             float roll = (float)(_fov * -movement.X / range);
+            
             var vp = Player.MediaPlayer.Viewpoint;
             Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll + roll, _fov);
             ViewModel.VideoPlayerRoll = vp.Roll + roll;
@@ -155,6 +173,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         {
             _fov = Player.MediaPlayer.Viewpoint.Fov;
             _fov = Math.Min(Math.Max(5, _fov + (float)(_fov * -movement.X / range)), 180);
+            
             var vp = Player.MediaPlayer.Viewpoint;
             Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll, _fov);
             ViewModel.VideoPlayerFov = _fov;
@@ -215,5 +234,50 @@ public partial class VideoPlayerView : UserControl, IDisposable
         }
         else
             Console.WriteLine("Scrubber value updated to " + e.NewValue);
+    }
+
+    private void CropTimelineStartButtonClick(object? sender, RoutedEventArgs e)
+    {
+        var timePositionMs = (long)(Scrubber.Value * 1000);
+        ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds = timePositionMs;
+        CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
+        // TODO set control position
+        // Also set it when the video is
+        // Also gonna need a reset button for the crop
+    }
+
+    private void CropTimelineEndButtonClick(object? sender, RoutedEventArgs e)
+    {
+        var timePositionMs = (long)(Scrubber.Value * 1000);
+        ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds = timePositionMs;
+        CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
+        // TODO set control position
+    }
+    
+    private void ResetCropMarkerPositions()
+    {
+        var startMarkerPos = 0;
+        var endMarkerPos = CropTimelineCanvas.Bounds.Width - CropEndMarker.Bounds.Width;
+        Canvas.SetLeft(CropStartMarker, startMarkerPos);
+        Canvas.SetLeft(CropEndMarker, endMarkerPos);
+    }
+    
+    private void CalculateAndSetCropMarkerPositions(ConvertibleVideoModel? videoModel)
+    {
+        if (videoModel?.TimelineCrop == null)
+        {
+            ResetCropMarkerPositions();
+            return;
+        }
+
+        var crop = videoModel.TimelineCrop;
+        var timeLineLength = videoModel.MediaInfo.DurationMilliseconds;
+
+        var startMarkerPos = (double)(crop.StartTimeMilliseconds ?? 0) / timeLineLength * CropTimelineCanvas.Bounds.Width;
+        var endMarkerPos = (double)(crop.EndTimeMilliseconds ?? timeLineLength) / timeLineLength * CropTimelineCanvas.Bounds.Width;
+
+        Canvas.SetLeft(CropStartMarker, startMarkerPos);
+        Canvas.SetLeft(CropEndMarker, endMarkerPos - CropEndMarker.Bounds.Width);
+        
     }
 }

@@ -32,12 +32,22 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     public partial double KeyFrameVideoRenderProgress { get; set; }
     [ObservableProperty]
     public partial bool BlurImageVisible { get; set; }
-    [ObservableProperty]
-    public partial bool AutoRenderOnChanges { get; set; }
     
     [ObservableProperty]
     public partial VideoPlayerViewModel KeyFrameVideoPlayerViewModel { get; set; }
 
+    public bool AutoRenderOnChanges
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            if (value)
+                _ = LiveUpdateSnapshot();
+        }
+    }
+    
+    
     public int TransformYawValue
     {
         get => field;
@@ -138,7 +148,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     {
         _mediaPreviewService = mediaPreviewService;
         _appSettingsService = appSettingsService;
-        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(null);
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(null, null);
     }
 
     /// <summary>
@@ -152,6 +162,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     {
         BlurImageVisible = true;
         VideoModel = videoModel;
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(videoModel, null);
         
         if (videoModel == null && initialPreviewImage == null)
             return;
@@ -338,7 +349,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             if (KeyFrameVideoPlayerViewModel != null)
                 KeyFrameVideoPlayerViewModel.PropertyChanged -= OnVideoPlayerOriginatedViewPointPropertyChanged;
             
-            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(keyFrameVideo);
+            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(VideoModel, keyFrameVideo);
             KeyFrameVideoPlayerViewModel.PropertyChanged += OnVideoPlayerOriginatedViewPointPropertyChanged;
         }
         catch (Exception e)

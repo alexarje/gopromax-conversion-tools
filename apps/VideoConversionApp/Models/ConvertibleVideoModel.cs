@@ -9,11 +9,13 @@ public class ConvertibleVideoModel
     public bool IsEnabledForConversion { get; set; } = false;
     
     public AvFilterFrameRotation FrameRotation { get; set; }
+    public TimelineCrop TimelineCrop { get; set; }
     
     public ConvertibleVideoModel(MediaInfo mediaInfo)
     {
         MediaInfo = mediaInfo;
         FrameRotation = AvFilterFrameRotation.Zero;
+        TimelineCrop = new TimelineCrop();
     }
     
     

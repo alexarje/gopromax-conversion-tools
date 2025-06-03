@@ -26,10 +26,22 @@
       <!-- Must be placed inside VideoView, but does not render in designer while inside it, so must be placed outside while editing -->
       <Panel Name="ControlsPanel" PointerMoved="ControlsPanel_OnPointerMoved" Background="Transparent">
         <StackPanel Name="Stack" Orientation="Vertical" VerticalAlignment="Bottom" Background="Transparent">
-          <Slider Name="Scrubber" 
-            Value="0"
-            IsSnapToTickEnabled="True"
-            TickFrequency="1" ValueChanged="Scrubber_OnValueChanged" />
+          <Panel>
+            <Canvas Name="CropTimelineCanvas" Margin="6 0 6 0" Height="24">
+              <Border Name="CropStartMarker" 
+                BorderThickness="2 2 0 2" BorderBrush="DimGray"
+                Width="6" Height="24" HorizontalAlignment="Left" 
+                Canvas.Left="0" />
+              <Border Name="CropEndMarker" 
+                BorderThickness="0 2 2 2" BorderBrush="DimGray" 
+                Width="6" Height="24" HorizontalAlignment="Right" 
+                Canvas.Left="0" />
+            </Canvas>
+            <Slider Name="Scrubber" 
+              Value="0"
+              IsSnapToTickEnabled="True"
+              TickFrequency="1" ValueChanged="Scrubber_OnValueChanged" />
+          </Panel>
           <Panel Background="rgba(100,100,100,150)">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
               <Button Name="StopButton" Classes="video-control-button" Height="32" Click="StopClicked">
@@ -50,6 +62,18 @@
                 <TextBlock Margin="8 0 0 0" VerticalAlignment="Center">Reset</TextBlock>
               </StackPanel>
             </Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+              <Button Name="CropTimelineStartButton" Classes="video-control-button" Height="32" Width="32" FontSize="20"
+                ToolTip.Tip="Crop video start time"
+                Click="CropTimelineStartButtonClick">
+                [
+              </Button>
+              <Button Name="CropTimelineEndButton" Classes="video-control-button" Height="32" Width="32" FontSize="20"
+                ToolTip.Tip="Crop video end time"
+                Click="CropTimelineEndButtonClick">
+                ]
+              </Button>
+            </StackPanel>
           </Panel>
         </StackPanel>
       </Panel>

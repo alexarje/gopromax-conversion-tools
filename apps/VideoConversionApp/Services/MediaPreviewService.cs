@@ -357,7 +357,6 @@ public class MediaPreviewService : IMediaPreviewService
                     return new KeyFrameVideo()
                     {
                         VideoPath = tmpVideoFilePath,
-                        FramesGenerated = 0, // do we need it?
                         SourceVideo = convertibleVideo
                     };
                 }
