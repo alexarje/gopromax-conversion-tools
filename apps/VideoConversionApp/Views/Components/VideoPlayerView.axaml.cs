@@ -138,6 +138,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
     {
         if (Player?.MediaPlayer == null)
             return;
+        if (ViewModel == null)
+            return;
         
         var currentPosition = e.GetCurrentPoint(this).Position;
         var movement = currentPosition - _previousMousePosition;
@@ -238,20 +240,36 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void CropTimelineStartButtonClick(object? sender, RoutedEventArgs e)
     {
+        if (ViewModel?.SourceConvertibleVideo == null)
+            return;
+        
         var timePositionMs = (long)(Scrubber.Value * 1000);
         ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds = timePositionMs;
+        ViewModel.CropTimelineStartTime = timePositionMs / 1000.0;
+        if (ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds < timePositionMs)
+        {
+            ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds = timePositionMs;
+            ViewModel.CropTimelineEndTime = timePositionMs / 1000.0;
+        }
+
         CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
-        // TODO set control position
-        // Also set it when the video is
-        // Also gonna need a reset button for the crop
     }
 
     private void CropTimelineEndButtonClick(object? sender, RoutedEventArgs e)
     {
+        if (ViewModel?.SourceConvertibleVideo == null)
+            return;
+        
         var timePositionMs = (long)(Scrubber.Value * 1000);
         ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds = timePositionMs;
+        ViewModel.CropTimelineEndTime = timePositionMs / 1000.0;
+        if (ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds > timePositionMs)
+        {
+            ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds = timePositionMs;
+            ViewModel.CropTimelineStartTime = timePositionMs / 1000.0;
+        }
+
         CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
-        // TODO set control position
     }
     
     private void ResetCropMarkerPositions()
@@ -262,7 +280,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         Canvas.SetLeft(CropEndMarker, endMarkerPos);
     }
     
-    private void CalculateAndSetCropMarkerPositions(ConvertibleVideoModel? videoModel)
+    public void CalculateAndSetCropMarkerPositions(ConvertibleVideoModel? videoModel)
     {
         if (videoModel?.TimelineCrop == null)
         {

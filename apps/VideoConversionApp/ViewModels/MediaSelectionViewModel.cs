@@ -84,6 +84,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             
             var mediaInfo = await _mediaInfoService.GetMediaInfoAsync(fullFilename!);
             var convertibleVideo = new ConvertibleVideoModel(mediaInfo);
+            convertibleVideo.OnConversionSettingsChanged += ConvertibleVideoOnOnConversionSettingsChanged;
             if (mediaInfo.IsValidVideo && mediaInfo.IsGoProMaxFormat)
                 _conversionManager.AddToConversionCandidates(convertibleVideo);
 
@@ -106,6 +107,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             {
                 VideoList.Remove(thumbViewModel);
                 _conversionManager.RemoveFromConversionCandidates(thumbViewModel.LinkedConvertibleVideoModel);
+                thumbViewModel.LinkedConvertibleVideoModel.OnConversionSettingsChanged -= ConvertibleVideoOnOnConversionSettingsChanged;
             });
             
             thumbViewModel.OnSelectFileCommand = new RelayCommand<bool>((isChecked) =>
@@ -137,13 +139,28 @@ public partial class MediaSelectionViewModel : MainViewModelPart
 
     }
 
+    private void ConvertibleVideoOnOnConversionSettingsChanged(object? sender, bool e)
+    {
+        var convertibleVideo = sender as ConvertibleVideoModel;
+        var settingsChanged = e;
+
+        var videoThumbViewModel = VideoList.FirstOrDefault(x => x.LinkedConvertibleVideoModel == convertibleVideo);
+        if (videoThumbViewModel == null)
+            return;
+        
+        videoThumbViewModel.HasConversionSettingsModified = settingsChanged;
+    }
+
     [RelayCommand]
     private void ClearAllFiles()
     {
         foreach (var videoThumbViewModel in VideoList)
         {
             if (videoThumbViewModel.LinkedConvertibleVideoModel != null)
+            {
                 _conversionManager.RemoveFromConversionCandidates(videoThumbViewModel.LinkedConvertibleVideoModel);
+                videoThumbViewModel.LinkedConvertibleVideoModel.OnConversionSettingsChanged -= ConvertibleVideoOnOnConversionSettingsChanged;
+            }
         }
         VideoList.Clear();
     }

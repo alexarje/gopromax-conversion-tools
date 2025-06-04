@@ -29,11 +29,11 @@
           <Panel>
             <Canvas Name="CropTimelineCanvas" Margin="6 0 6 0" Height="24">
               <Border Name="CropStartMarker" 
-                BorderThickness="2 2 0 2" BorderBrush="DimGray"
+                BorderThickness="2 2 0 2" BorderBrush="Coral"
                 Width="6" Height="24" HorizontalAlignment="Left" 
                 Canvas.Left="0" />
               <Border Name="CropEndMarker" 
-                BorderThickness="0 2 2 2" BorderBrush="DimGray" 
+                BorderThickness="0 2 2 2" BorderBrush="Coral" 
                 Width="6" Height="24" HorizontalAlignment="Right" 
                 Canvas.Left="0" />
             </Canvas>

@@ -4,7 +4,7 @@
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:components="clr-namespace:VideoConversionApp.Views.Components"
   xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
-  mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="750"
+  mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="800"
   x:Class="VideoConversionApp.Views.ConversionPreviewView"
   x:DataType="vm:ConversionPreviewViewModel">
 
@@ -192,6 +192,26 @@
               
             </Grid>
             
+          </Border>
+          
+          <TextBlock Classes="control-group-heading" Margin="4 20 0 10">Crop timeline</TextBlock>
+          <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3">
+            <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="*" Classes="orientation-controls-grid">
+              <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Start time (s)</TextBlock>
+              <NumericUpDown Name="TimelineCropStartTimeBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                Minimum="0" Maximum="{Binding MaximumCropTimelineStartTime}" 
+                Value="{Binding CropTimelineStartTime}"
+                Width="100"></NumericUpDown>
+              <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center">End time (s)</TextBlock>
+              <NumericUpDown Name="TimelineCropEndTimeBox" Grid.Row="0" Grid.Column="3" VerticalAlignment="Center"
+                Minimum="0" Maximum="{Binding MaximumCropTimelineStartTime}" 
+                Value="{Binding CropTimelineEndTime}"
+                Width="100"></NumericUpDown>
+              <Button Grid.Row="0" Grid.Column="4" CornerRadius="3" Width="22" Height="22" Margin="8 0 0 0"
+                ToolTip.Tip="Reset to 0" Command="{Binding ResetVideoTimelineCropCommand}">
+                <PathIcon Data="{StaticResource arrow_sync_off_regular}" Width="12"></PathIcon>
+              </Button>
+            </Grid>
           </Border>
           
         </StackPanel>

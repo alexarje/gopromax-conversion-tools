@@ -28,11 +28,6 @@ public partial class VideoPlayerViewModel : ViewModelBase
     // For parent viewmodel needs, actually. This is a bit of a mess.
     public VideoPlayerView AssociatedView { get; set; } = null!; 
     
-    // [ObservableProperty]
-    // public partial double? TimelineCropStartMarkerLeft { get; set; }
-    // [ObservableProperty]
-    // public partial double? TimelineCropEndMarkerLeft { get; set; }
-
     
     // "Read only" properties; set from the VideoPlayerView.
     // The parent ViewModel can listen to these to sync its control-bound properties to
@@ -45,6 +40,10 @@ public partial class VideoPlayerViewModel : ViewModelBase
     public partial float VideoPlayerRoll { get; set; }
     [ObservableProperty]
     public partial float VideoPlayerFov { get; set; }
+    [ObservableProperty]
+    public partial double CropTimelineStartTime { get; set; }
+    [ObservableProperty]
+    public partial double CropTimelineEndTime { get; set; } 
     
     public VideoPlayerViewModel(ConvertibleVideoModel? sourceConvertibleVideo, KeyFrameVideo? video)
     {

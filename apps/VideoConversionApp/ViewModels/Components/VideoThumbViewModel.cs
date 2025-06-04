@@ -27,6 +27,7 @@ public partial class VideoThumbViewModel : ViewModelBase
     [ObservableProperty] public partial bool ShowAsSelectedForConversion { get; set; } = false;
     [ObservableProperty] public partial bool HasProblems { get; set; } = false;
     [ObservableProperty] public partial string ToolTipMessage { get; set; } = null!;
+    [ObservableProperty] public partial bool HasConversionSettingsModified { get; set; } = false;
 
     public string VideoDateTimeString => VideoDateTime.ToString(DataFormattingHelpers.TryResolveActiveCulture());
     public string FileSizeString => FileSize.AsDataQuantityString(2);

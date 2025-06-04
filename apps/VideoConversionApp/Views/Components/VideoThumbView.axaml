@@ -81,7 +81,8 @@
       TextTrimming="CharacterEllipsis"
       Margin="0,0,6,0" HorizontalAlignment="Left" />
     
-    <Panel Grid.Row="1" Grid.Column="1">
+    <Panel Grid.Row="1" Grid.Column="1" IsVisible="{Binding HasConversionSettingsModified}"
+      ToolTip.Tip="Conversion settings have been set/modified for this video">
       <Ellipse Width="12" Height="12" Fill="Black" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="14  0 0 0"></Ellipse>
       <Ellipse Width="10" Height="10" Fill="Orange" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15  1 0 0"></Ellipse>
     </Panel>
