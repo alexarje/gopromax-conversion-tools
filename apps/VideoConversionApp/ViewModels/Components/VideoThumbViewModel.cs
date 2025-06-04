@@ -21,7 +21,7 @@ public partial class VideoThumbViewModel : ViewModelBase
     [ObservableProperty] public partial Bitmap ThumbnailImage { get; set; } = null!;
     [ObservableProperty] public partial string PreviewFileName { get; set; } = "";
     [ObservableProperty] public partial long FileSize { get; set; } = 0;
-    [ObservableProperty] public partial double VideoLength { get; set; } = 0;
+    [ObservableProperty] public partial double VideoLengthSeconds { get; set; } = 0;
     [ObservableProperty] public partial DateTime VideoDateTime { get; set; } = DateTime.MinValue;
     [ObservableProperty] public partial bool HasLoadingThumbnail { get; set; } = true;
     [ObservableProperty] public partial bool ShowAsSelectedForConversion { get; set; } = false;
@@ -31,7 +31,7 @@ public partial class VideoThumbViewModel : ViewModelBase
 
     public string VideoDateTimeString => VideoDateTime.ToString(DataFormattingHelpers.TryResolveActiveCulture());
     public string FileSizeString => FileSize.AsDataQuantityString(2);
-    public string VideoLengthString => TimeSpan.FromSeconds(VideoLength).ToString(@"hh\:mm\:ss");
+    public string VideoLengthString => TimeSpan.FromSeconds(VideoLengthSeconds).ToString(@"hh\:mm\:ss");
     
     /// <summary>
     /// The linked data model.
@@ -53,7 +53,7 @@ public partial class VideoThumbViewModel : ViewModelBase
             PreviewFileName = Path.GetFileName(FullFileName);
             FileSize = 180_556_782;
             VideoDateTime = DateTime.Now;
-            VideoLength = 127.5;
+            VideoLengthSeconds = 127.5;
             return;
         }
 

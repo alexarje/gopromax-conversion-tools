@@ -94,7 +94,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
                 PreviewFileName = Path.GetFileName(fullFilename!),
                 FileSize = mediaInfo.SizeBytes,
                 VideoDateTime = mediaInfo.CreatedDateTime,
-                VideoLength = mediaInfo.DurationSeconds,
+                VideoLengthSeconds = (double)mediaInfo.DurationInSeconds,
                 ShowAsSelectedForConversion = mediaInfo.IsGoProMaxFormat && convertibleVideo.IsEnabledForConversion,
                 LinkedConvertibleVideoModel = mediaInfo.IsGoProMaxFormat ? convertibleVideo : null,
                 HasProblems = !mediaInfo.IsGoProMaxFormat || !mediaInfo.IsValidVideo,
@@ -124,8 +124,8 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         {
             var item = thumbGenerationJobs[i];
             var i1 = i;
-            var thumbTimePosition = appSettings.ThumbnailAtPosition / 100.0 * item.mediaInfo.DurationMilliseconds;
-            _ = _mediaPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePosition)
+            var thumbTimePositionMs = appSettings.ThumbnailAtPosition / 100.0 * (long)(item.mediaInfo.DurationInSeconds * 1000);
+            _ = _mediaPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePositionMs)
                 .ContinueWith(task =>
                 {
                     if (task.Result != null)

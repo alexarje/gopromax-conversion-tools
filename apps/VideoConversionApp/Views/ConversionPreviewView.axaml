@@ -87,11 +87,14 @@
               <Button Name="RenderSnapshotFrameImagesButton" 
                 Margin="4 0 0 0" 
                 Background="rgba(100,100,100,100)"
-                Command="{Binding OnRenderSnapshotFramesAsync}">Render</Button>
+                Command="{Binding OnRenderSnapshotFramesAsync}"
+                ToolTip.Tip="Renders the snapshot frames">Render</Button>
             </Panel>
           </Grid>
           
-          <TextBlock Classes="control-group-heading" Margin="4 20 0 10">Orientation (transform)</TextBlock>
+          <TextBlock Classes="control-group-heading" Margin="4 20 0 10"
+            ToolTip.Tip="Changes the initial orientation in the 360 video."
+            >Orientation (transform)</TextBlock>
           <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="*,*,*" Classes="orientation-controls-grid">
               <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Yaw</TextBlock>
@@ -139,11 +142,31 @@
               <ProgressBar ShowProgressText="false" Value="{Binding KeyFrameVideoRenderProgress}" 
                 Margin="0 0 0 0" />
               <Button Name="RenderKeyFrameVideoButton" Margin="0 0 0 0" Background="rgba(100,100,100,100)"
-                Command="{Binding RenderKeyFrameVideoCommand}">Render</Button>
+                Command="{Binding RenderKeyFrameVideoCommand}"
+                ToolTip.Tip="Render the keyframe video using the orientation (transform) settings">Render</Button>
             </Panel>
           </Grid>
           
-          <TextBlock Classes="control-group-heading" Margin="4 20 0 10">Orientation (preview)</TextBlock>
+          <TextBlock Classes="control-group-heading" Margin="4 20 0 10">
+            <ToolTip.Tip>
+              <StackPanel Orientation="Vertical">
+                <TextBlock Margin="0 0 0 20">Viewpoint rotation in the keyframe preview.</TextBlock>
+                <TextBlock Margin="0 0 0 6" FontStyle="Italic">
+                  You can also rotate bdy dragging your mouse over the video view:
+                </TextBlock>
+                <TextBlock Margin="0 0 0 4" FontStyle="Italic">
+                  - Left button down to Yaw/Pitch
+                </TextBlock>
+                <TextBlock Margin="0 0 0 4" FontStyle="Italic">
+                  - Right button down to Roll
+                </TextBlock>
+                <TextBlock Margin="0 0 0 4" FontStyle="Italic">
+                  - Middle button down to change Field of View
+                </TextBlock>
+              </StackPanel>
+            </ToolTip.Tip>
+            Orientation (preview)
+          </TextBlock>
           <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="*,*,*,*" Classes="orientation-controls-grid">
               <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Yaw</TextBlock>
@@ -199,16 +222,16 @@
             <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="*" Classes="orientation-controls-grid">
               <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Start time (s)</TextBlock>
               <NumericUpDown Name="TimelineCropStartTimeBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
-                Minimum="0" Maximum="{Binding MaximumCropTimelineStartTime}" 
+                Minimum="0" Maximum="{Binding MaximumCropTimelineTime}" 
                 Value="{Binding CropTimelineStartTime}"
                 Width="100"></NumericUpDown>
               <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center">End time (s)</TextBlock>
               <NumericUpDown Name="TimelineCropEndTimeBox" Grid.Row="0" Grid.Column="3" VerticalAlignment="Center"
-                Minimum="0" Maximum="{Binding MaximumCropTimelineStartTime}" 
+                Minimum="0" Maximum="{Binding MaximumCropTimelineTime}" 
                 Value="{Binding CropTimelineEndTime}"
                 Width="100"></NumericUpDown>
               <Button Grid.Row="0" Grid.Column="4" CornerRadius="3" Width="22" Height="22" Margin="8 0 0 0"
-                ToolTip.Tip="Reset to 0" Command="{Binding ResetVideoTimelineCropCommand}">
+                ToolTip.Tip="Remove timeline crop" Command="{Binding ResetVideoTimelineCropCommand}">
                 <PathIcon Data="{StaticResource arrow_sync_off_regular}" Width="12"></PathIcon>
               </Button>
             </Grid>

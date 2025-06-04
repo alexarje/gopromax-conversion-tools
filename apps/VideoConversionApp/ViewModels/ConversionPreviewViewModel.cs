@@ -34,9 +34,9 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     public partial bool BlurImageVisible { get; set; }
 
     [ObservableProperty]
-    public partial double MaximumCropTimelineStartTime { get; set; }
+    public partial decimal MaximumCropTimelineTime { get; set; }
 
-    public double CropTimelineStartTime
+    public decimal CropTimelineStartTime
     {
         get => field;
         set
@@ -44,13 +44,13 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             if (value > CropTimelineEndTime)
                 value = CropTimelineEndTime;
             SetProperty(ref field, value);
-            VideoModel.TimelineCrop.StartTimeMilliseconds = (long)value * 1000;
+            VideoModel.TimelineCrop.StartTimeSeconds = value;
             VideoModel.NotifyConversionSettingsChanged();
             KeyFrameVideoPlayerViewModel.AssociatedView.CalculateAndSetCropMarkerPositions(VideoModel);
         }
     }
     
-    public double CropTimelineEndTime
+    public decimal CropTimelineEndTime
     {
         get => field;
         set
@@ -58,7 +58,7 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
             if (value < CropTimelineStartTime)
                 value = CropTimelineStartTime;
             SetProperty(ref field, value);
-            VideoModel.TimelineCrop.EndTimeMilliseconds = (long)value * 1000;
+            VideoModel.TimelineCrop.EndTimeSeconds = value;
             VideoModel.NotifyConversionSettingsChanged();
             KeyFrameVideoPlayerViewModel.AssociatedView.CalculateAndSetCropMarkerPositions(VideoModel);
         }
@@ -230,9 +230,9 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
         TransformRollValue = videoModel.FrameRotation.Roll;
         AutoRenderOnChanges = prevAutoRenderSetting;
 
-        MaximumCropTimelineStartTime = videoModel.MediaInfo.DurationMilliseconds / 1000.0;
-        CropTimelineStartTime = (videoModel.TimelineCrop.StartTimeMilliseconds ?? 0) / 1000.0;
-        CropTimelineEndTime = (videoModel.TimelineCrop.EndTimeMilliseconds ?? videoModel.MediaInfo.DurationMilliseconds) / 1000.0;
+        MaximumCropTimelineTime = videoModel.MediaInfo.DurationInSeconds;
+        CropTimelineStartTime = videoModel.TimelineCrop.StartTimeSeconds ?? 0;
+        CropTimelineEndTime = videoModel.TimelineCrop.EndTimeSeconds ?? videoModel.MediaInfo.DurationInSeconds;
 
         ResetPreviewFov();
         ResetPreviewPitch();
@@ -376,10 +376,10 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     {
         if (VideoModel == null)
             return;
-        VideoModel.TimelineCrop.StartTimeMilliseconds = null;
-        VideoModel.TimelineCrop.EndTimeMilliseconds = null;
+        VideoModel.TimelineCrop.StartTimeSeconds = null;
+        VideoModel.TimelineCrop.EndTimeSeconds = null;
         CropTimelineStartTime = 0;
-        CropTimelineEndTime = VideoModel.MediaInfo.DurationMilliseconds / 1000.0;
+        CropTimelineEndTime = VideoModel.MediaInfo.DurationInSeconds;
         KeyFrameVideoPlayerViewModel.AssociatedView.CalculateAndSetCropMarkerPositions(VideoModel);
         VideoModel.NotifyConversionSettingsChanged();
     }

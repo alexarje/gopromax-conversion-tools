@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
+using VideoConversionApp.Utils;
 using File = System.IO.File;
 
 namespace VideoConversionApp.Services;
@@ -154,11 +155,11 @@ public class MediaPreviewService : IMediaPreviewService
             throw new ArgumentException("Number of frames must be at least 2");
      
         var appSettings = _appSettingsService.GetSettings();
-        var skipLength = mediaInfo.DurationMilliseconds / (numberOfFrames - 1);
+        var skipLength = mediaInfo.DurationInSeconds / (numberOfFrames - 1);
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
         {
-            FrameDistance = skipLength / 1000,
+            FrameDistance = (double)Math.Round(skipLength, 3),
             KeyFramesOnly = true
         }, settings.Rotation);
         
@@ -316,7 +317,7 @@ public class MediaPreviewService : IMediaPreviewService
                 if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
                 {
                     var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
-                    var progress = frameTime.TotalMilliseconds / mediaInfo.DurationMilliseconds;
+                    var progress = frameTime.TotalMilliseconds / mediaInfo.DurationInSeconds.AsMillisecondsDouble();
                     progressCallback?.Invoke(Math.Round(progress * 100.0, 2));
                 }
                 if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))

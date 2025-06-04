@@ -46,12 +46,14 @@
     Classes.problems="{Binding HasProblems}"
     ToolTip.Tip="{Binding ToolTipMessage}">
     <CheckBox Grid.Column="0" Grid.RowSpan="7" Margin="2" 
+      ToolTip.Tip="Set selected for conversion"
       IsEnabled="{Binding !HasProblems}"
       IsChecked="{Binding ShowAsSelectedForConversion}"
       Command="{Binding OnSelectFileCommand}"
       CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}"></CheckBox>
     <Button Grid.Column="3" Grid.Row="0" Grid.RowSpan="7"  Height="30" 
-      Command="{Binding OnCloseClickCommand}">X</Button>
+      Command="{Binding OnCloseClickCommand}"
+      ToolTip.Tip="Remove from list">X</Button>
     <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="7" Classes="thumb"
       Margin="10 12" BorderThickness="1" CornerRadius="8"
       ClipToBounds="True"> 

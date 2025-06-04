@@ -5,6 +5,11 @@ namespace VideoConversionApp.Utils;
 
 public static class DataFormattingHelpers
 {
+    public static double AsMillisecondsDouble(this decimal d)
+    {
+        return (double)(d * 1000);
+    }
+    
     public static string AsDataQuantityString(this long bytes, int decimalPlaces = 2)
     {
         string[] sizeSuffixes = ["bytes", "KiB", "MiB", "GiB", "TiB"];

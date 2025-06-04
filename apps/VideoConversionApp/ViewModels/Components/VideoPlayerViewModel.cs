@@ -41,9 +41,9 @@ public partial class VideoPlayerViewModel : ViewModelBase
     [ObservableProperty]
     public partial float VideoPlayerFov { get; set; }
     [ObservableProperty]
-    public partial double CropTimelineStartTime { get; set; }
+    public partial decimal CropTimelineStartTime { get; set; }
     [ObservableProperty]
-    public partial double CropTimelineEndTime { get; set; } 
+    public partial decimal CropTimelineEndTime { get; set; } 
     
     public VideoPlayerViewModel(ConvertibleVideoModel? sourceConvertibleVideo, KeyFrameVideo? video)
     {

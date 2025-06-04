@@ -23,8 +23,8 @@ public class ConvertibleVideoModel
         get
         {
             var rotationChanged = FrameRotation.Pitch != 0 || FrameRotation.Yaw != 0 || FrameRotation.Roll != 0;
-            var startCropped = TimelineCrop.StartTimeMilliseconds != 0 && TimelineCrop.StartTimeMilliseconds != null;
-            var endCropped = TimelineCrop.EndTimeMilliseconds != MediaInfo.DurationMilliseconds && TimelineCrop.EndTimeMilliseconds != null;
+            var startCropped = TimelineCrop.StartTimeSeconds != 0 && TimelineCrop.StartTimeSeconds != null;
+            var endCropped = TimelineCrop.EndTimeSeconds != MediaInfo.DurationInSeconds && TimelineCrop.EndTimeSeconds != null;
 
             return rotationChanged || startCropped || endCropped;
         }

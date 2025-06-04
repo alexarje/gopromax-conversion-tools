@@ -88,7 +88,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
             {
                 // Duration is not available until we play, but we have that information
                 // in the KeyFrameVideo class.
-                Scrubber.Maximum = vm.KeyFrameVideo.SourceVideo.MediaInfo.DurationMilliseconds / 1000.0;
+                Scrubber.Maximum = (double)vm.KeyFrameVideo.SourceVideo.MediaInfo.DurationInSeconds;
                 
                 var media = new Media(_libVlc, vm.VideoUri);
                 _mediaPlayer.Media = media;
@@ -243,13 +243,13 @@ public partial class VideoPlayerView : UserControl, IDisposable
         if (ViewModel?.SourceConvertibleVideo == null)
             return;
         
-        var timePositionMs = (long)(Scrubber.Value * 1000);
-        ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds = timePositionMs;
-        ViewModel.CropTimelineStartTime = timePositionMs / 1000.0;
-        if (ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds < timePositionMs)
+        var timePositionMs = Math.Round((decimal)Scrubber.Value, 3);
+        ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeSeconds = timePositionMs;
+        ViewModel.CropTimelineStartTime = timePositionMs;
+        if (ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeSeconds < timePositionMs)
         {
-            ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds = timePositionMs;
-            ViewModel.CropTimelineEndTime = timePositionMs / 1000.0;
+            ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeSeconds = timePositionMs;
+            ViewModel.CropTimelineEndTime = timePositionMs;
         }
 
         CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
@@ -260,13 +260,13 @@ public partial class VideoPlayerView : UserControl, IDisposable
         if (ViewModel?.SourceConvertibleVideo == null)
             return;
         
-        var timePositionMs = (long)(Scrubber.Value * 1000);
-        ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeMilliseconds = timePositionMs;
-        ViewModel.CropTimelineEndTime = timePositionMs / 1000.0;
-        if (ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds > timePositionMs)
+        var timePositionMs = Math.Round((decimal)Scrubber.Value, 3);
+        ViewModel.SourceConvertibleVideo.TimelineCrop.EndTimeSeconds = timePositionMs;
+        ViewModel.CropTimelineEndTime = timePositionMs;
+        if (ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeSeconds > timePositionMs)
         {
-            ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeMilliseconds = timePositionMs;
-            ViewModel.CropTimelineStartTime = timePositionMs / 1000.0;
+            ViewModel.SourceConvertibleVideo.TimelineCrop.StartTimeSeconds = timePositionMs;
+            ViewModel.CropTimelineStartTime = timePositionMs;
         }
 
         CalculateAndSetCropMarkerPositions(ViewModel.SourceConvertibleVideo);
@@ -289,10 +289,10 @@ public partial class VideoPlayerView : UserControl, IDisposable
         }
 
         var crop = videoModel.TimelineCrop;
-        var timeLineLength = videoModel.MediaInfo.DurationMilliseconds;
+        var timeLineLength = videoModel.MediaInfo.DurationInSeconds;
 
-        var startMarkerPos = (double)(crop.StartTimeMilliseconds ?? 0) / timeLineLength * CropTimelineCanvas.Bounds.Width;
-        var endMarkerPos = (double)(crop.EndTimeMilliseconds ?? timeLineLength) / timeLineLength * CropTimelineCanvas.Bounds.Width;
+        var startMarkerPos = (double)(crop.StartTimeSeconds ?? 0) / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
+        var endMarkerPos = (double)(crop.EndTimeSeconds ?? timeLineLength) / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
 
         Canvas.SetLeft(CropStartMarker, startMarkerPos);
         Canvas.SetLeft(CropEndMarker, endMarkerPos - CropEndMarker.Bounds.Width);
