@@ -107,7 +107,8 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             {
                 VideoList.Remove(thumbViewModel);
                 _conversionManager.RemoveFromConversionCandidates(thumbViewModel.LinkedConvertibleVideoModel);
-                thumbViewModel.LinkedConvertibleVideoModel.OnConversionSettingsChanged -= ConvertibleVideoOnOnConversionSettingsChanged;
+                if (thumbViewModel.LinkedConvertibleVideoModel != null)
+                    thumbViewModel.LinkedConvertibleVideoModel.OnConversionSettingsChanged -= ConvertibleVideoOnOnConversionSettingsChanged;
             });
             
             thumbViewModel.OnSelectFileCommand = new RelayCommand<bool>((isChecked) =>
