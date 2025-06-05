@@ -75,7 +75,7 @@
     </Border>
     <Border Classes="pane-body pb-lb">
       <ListBox Name="MediaSelectionListBox" ItemsSource="{Binding VideoList}" BorderBrush="Transparent"
-        SelectedItem="{Binding SelectedVideoThumbViewModel}">
+        SelectedValue="{Binding SelectedVideoThumbViewModel}">
         <ListBox.ItemTemplate>
           <DataTemplate>
             <components:VideoThumbView Margin="10 0 10 0" Height="100"

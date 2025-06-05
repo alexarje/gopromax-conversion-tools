@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -24,13 +26,33 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     private readonly IMediaPreviewService _mediaPreviewService;
     private readonly IConversionManager _conversionManager;
 
+
+    // This is a bit ridiculous, how we do not have sort available in ObservableCollection...
+    public class SortableObservableCollection<T> : ObservableCollection<T>
+    {
+        public void Sort(Comparison<T> comparison)
+        {
+            //var itemsAndIndices = Items.ToList();
+            ((List<T>)Items).Sort(comparison);
+            // Won't work
+            // for (var i = 0; i < Items.Count; i++)
+            // {
+            //     var oldIndex = itemsAndIndices.IndexOf(Items[i]);
+            //     if (oldIndex != i)
+            //         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, Items[i], i, oldIndex));
+            // }
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            
+        }
+    }
+    
     public bool SortDescending
     {
         get => field;
         set
         {
             SetProperty(ref field, value);
-            SortVideoList(value, SelectedSort);
+            VideoList.Sort(VideoListSortComparison);
         }
     }
     
@@ -47,16 +69,24 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         set
         {
             SetProperty(ref field, value);
-            SortVideoList(SortDescending, value);
+            VideoList.Sort(VideoListSortComparison);
         }
     }
     
     [ObservableProperty]
     public partial VideoThumbViewModel? SelectedVideoThumbViewModel { get; set; }
 
-    [ObservableProperty]
-    public partial ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
-        new ObservableCollection<VideoThumbViewModel>();
+    // [ObservableProperty] // Maybe consider SortedList instead? And notify manually.
+    // public partial ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
+    //     new ObservableCollection<VideoThumbViewModel>();
+    public SortableObservableCollection<VideoThumbViewModel> VideoList
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+        }
+    } = new SortableObservableCollection<VideoThumbViewModel>();
     
     public MediaSelectionViewModel(IServiceProvider serviceProvider, 
         IAppSettingsService appSettingsService,
@@ -90,42 +120,6 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         }
     }
 
-    private void SortVideoList(bool descending, string sortKey)
-    {
-        if (sortKey == "Date")
-        {
-            VideoList = new ObservableCollection<VideoThumbViewModel>(
-                VideoList.OrderBy(x => x.VideoDateTime));
-            if (descending)
-            {
-                VideoList = new ObservableCollection<VideoThumbViewModel>(
-                    VideoList.OrderByDescending(x => x.VideoDateTime));
-            }
-        }
-
-        if (sortKey == "Filename")
-        {
-            VideoList = new ObservableCollection<VideoThumbViewModel>(
-                VideoList.OrderBy(x => x.FullFileName));
-            if (descending)
-            {
-                VideoList = new ObservableCollection<VideoThumbViewModel>(
-                    VideoList.OrderByDescending(x => x.FullFileName));
-            }
-        }
-
-        if (sortKey == "Duration")
-        {
-            VideoList = new ObservableCollection<VideoThumbViewModel>(
-                VideoList.OrderBy(x => x.VideoLengthSeconds));
-            if (descending)
-            {
-                VideoList = new ObservableCollection<VideoThumbViewModel>(
-                    VideoList.OrderByDescending(x => x.VideoLengthSeconds));
-            }
-        }
-        
-    }
 
     [RelayCommand]
     private async Task AddFiles()
@@ -184,6 +178,8 @@ public partial class MediaSelectionViewModel : MainViewModelPart
             thumbGenerationJobs.Add((thumbViewModel, mediaInfo));
             VideoList.Add(thumbViewModel);
         }
+        
+        VideoList.Sort(VideoListSortComparison);
 
         
         for (var i = 0; i < thumbGenerationJobs.Count; i++)
@@ -203,6 +199,35 @@ public partial class MediaSelectionViewModel : MainViewModelPart
                 });
         }
 
+    }
+
+    private int VideoListSortComparison(VideoThumbViewModel x, VideoThumbViewModel y)
+    {
+        if (SelectedSort == "Date")
+        {
+            if (SortDescending)
+                return x.VideoDateTime > y.VideoDateTime ? -1 : 1;
+            else
+                return x.VideoDateTime < y.VideoDateTime ? -1 : 1;
+        }
+
+        if (SelectedSort == "Filename")
+        {
+            if (SortDescending)
+                return String.CompareOrdinal(y.PreviewFileName, x.PreviewFileName);
+            else
+                return String.CompareOrdinal(x.PreviewFileName, y.PreviewFileName);
+        }
+
+        if (SelectedSort == "Duration")
+        {
+            if (SortDescending)
+                return x.VideoLengthSeconds > y.VideoLengthSeconds ? -1 : 1;
+            else
+                return x.VideoLengthSeconds < y.VideoLengthSeconds ? -1 : 1;
+        }
+
+        return 0;
     }
 
     private void ConvertibleVideoOnOnConversionSettingsChanged(object? sender, bool e)
