@@ -60,12 +60,11 @@
               </StackPanel>
             </Button.Content>
           </Button>
-          <ComboBox Width="80" Margin="4" Name="SortComboBox" SelectedIndex="0" ToolTip.Tip="Sort by">
-            <ComboBoxItem>Date</ComboBoxItem> 
-            <ComboBoxItem>Filename</ComboBoxItem>
-            <ComboBoxItem>Duration</ComboBoxItem>
-          </ComboBox>
-          <ToggleButton Classes="basic-transparent" Margin="4" ToolTip.Tip="Sort descending">
+          <ComboBox Width="80" Margin="4" Name="SortComboBox" ItemsSource="{Binding SortOptions}" 
+            SelectedItem="{Binding SelectedSort}" ToolTip.Tip="Sort by"
+            />
+          <ToggleButton Classes="basic-transparent" Margin="4" ToolTip.Tip="Sort descending"
+            IsChecked="{Binding SortDescending}">
             <ToggleButton.Content>
               <PathIcon Data="{StaticResource  text_sort_descending_regular}"></PathIcon>  
             </ToggleButton.Content>

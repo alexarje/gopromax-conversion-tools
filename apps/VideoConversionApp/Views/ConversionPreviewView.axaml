@@ -22,7 +22,7 @@
     </Style>
   </UserControl.Styles>
 
-  <DockPanel>
+  <DockPanel IsEnabled="{Binding VideoModel, Converter={x:Static ObjectConverters.IsNotNull}}">
     <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>
         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"

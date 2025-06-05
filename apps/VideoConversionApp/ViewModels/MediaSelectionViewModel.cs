@@ -23,11 +23,39 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     private readonly IStorageDialogProvider _storageDialogProvider;
     private readonly IMediaPreviewService _mediaPreviewService;
     private readonly IConversionManager _conversionManager;
+
+    public bool SortDescending
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            SortVideoList(value, SelectedSort);
+        }
+    }
+    
+    public string[] SortOptions =>
+    [
+        "Date",
+        "Filename",
+        "Duration"
+    ];
+
+    public string SelectedSort
+    {
+        get => field;
+        set
+        {
+            SetProperty(ref field, value);
+            SortVideoList(SortDescending, value);
+        }
+    }
     
     [ObservableProperty]
     public partial VideoThumbViewModel? SelectedVideoThumbViewModel { get; set; }
 
-    public ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
+    [ObservableProperty]
+    public partial ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
         new ObservableCollection<VideoThumbViewModel>();
     
     public MediaSelectionViewModel(IServiceProvider serviceProvider, 
@@ -42,6 +70,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         _storageDialogProvider = storageDialogProvider;
         _mediaPreviewService = mediaPreviewService;
         _conversionManager = conversionManager;
+        SelectedSort = SortOptions.First();
 
         if (Design.IsDesignMode)
         {
@@ -61,6 +90,42 @@ public partial class MediaSelectionViewModel : MainViewModelPart
         }
     }
 
+    private void SortVideoList(bool descending, string sortKey)
+    {
+        if (sortKey == "Date")
+        {
+            VideoList = new ObservableCollection<VideoThumbViewModel>(
+                VideoList.OrderBy(x => x.VideoDateTime));
+            if (descending)
+            {
+                VideoList = new ObservableCollection<VideoThumbViewModel>(
+                    VideoList.OrderByDescending(x => x.VideoDateTime));
+            }
+        }
+
+        if (sortKey == "Filename")
+        {
+            VideoList = new ObservableCollection<VideoThumbViewModel>(
+                VideoList.OrderBy(x => x.FullFileName));
+            if (descending)
+            {
+                VideoList = new ObservableCollection<VideoThumbViewModel>(
+                    VideoList.OrderByDescending(x => x.FullFileName));
+            }
+        }
+
+        if (sortKey == "Duration")
+        {
+            VideoList = new ObservableCollection<VideoThumbViewModel>(
+                VideoList.OrderBy(x => x.VideoLengthSeconds));
+            if (descending)
+            {
+                VideoList = new ObservableCollection<VideoThumbViewModel>(
+                    VideoList.OrderByDescending(x => x.VideoLengthSeconds));
+            }
+        }
+        
+    }
 
     [RelayCommand]
     private async Task AddFiles()

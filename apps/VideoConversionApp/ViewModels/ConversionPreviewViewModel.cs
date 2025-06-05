@@ -208,6 +208,9 @@ public partial class ConversionPreviewViewModel : MainViewModelPart
     /// the snapshot frames get generated.</param>
     public async Task SetActiveVideoModelAsync(ConvertibleVideoModel? videoModel, IImage? initialPreviewImage)
     {
+        if (videoModel == VideoModel)
+            return;
+        
         BlurImageVisible = true;
         VideoModel = videoModel;
         KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(videoModel, null);
