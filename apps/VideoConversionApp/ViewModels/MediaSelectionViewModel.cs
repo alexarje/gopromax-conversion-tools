@@ -32,17 +32,8 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     {
         public void Sort(Comparison<T> comparison)
         {
-            //var itemsAndIndices = Items.ToList();
             ((List<T>)Items).Sort(comparison);
-            // Won't work
-            // for (var i = 0; i < Items.Count; i++)
-            // {
-            //     var oldIndex = itemsAndIndices.IndexOf(Items[i]);
-            //     if (oldIndex != i)
-            //         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Move, Items[i], i, oldIndex));
-            // }
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            
         }
     }
     
