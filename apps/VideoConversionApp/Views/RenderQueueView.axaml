@@ -22,6 +22,7 @@
     </Style>
     <Style Selector="PathIcon.compact-rendering">
       <Setter Property="Data" Value="{StaticResource caret_right_regular}"></Setter>
+      <Setter Property="Foreground" Value="DeepSkyBlue"></Setter>
     </Style>    
     <Style Selector="PathIcon.compact-queued">
       <Setter Property="Data" Value="{StaticResource keyboard_shift_uppercase_regular}"></Setter>
@@ -46,7 +47,7 @@
               </StackPanel>
             </Button.Content>
           </Button>  
-          <ToggleButton Classes="basic-transparent">
+          <ToggleButton Classes="basic-transparent" IsChecked="{Binding ShowExpandedView}">
             <StackPanel Orientation="Horizontal" Margin="8 0 0 0">
               <PathIcon Data="{StaticResource text_expand_regular}"></PathIcon>
               <TextBlock Margin="8">Show expanded</TextBlock>
@@ -64,11 +65,13 @@
               <Grid Name="ItemRoot" ColumnDefinitions="*" MaxWidth="{Binding $parent.Bounds.Width}">
                 <Border CornerRadius="6" Margin="5" ClipToBounds="True" BorderThickness="1" BorderBrush="Black"
                   Background="#333333"
-                  IsVisible="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).MinimalView}">
-                  <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="4">
+                  IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).ShowExpandedView}">
+                  <Grid ColumnDefinitions="Auto,Auto,*,Auto"  Margin="4" >
                     <PathIcon Grid.Column="0" Classes="compact-render-failed" Height="16" Margin="4 0 0 0"></PathIcon>
                     <TextBlock Grid.Column="1" Margin="0 0 8 0" Width="125" VerticalAlignment="Center" TextAlignment="Center">GS10235.360</TextBlock>
-                    <ProgressBar Grid.Column="2" Value="100" CornerRadius="6" Height="16" Margin="0 0 6 0"></ProgressBar>
+                    <Border Grid.Column="2" CornerRadius="20" ClipToBounds="True" Margin="0 0 6 0">
+                      <ProgressBar Value="60" CornerRadius="0" Height="16" />
+                    </Border>
                     <StackPanel Grid.Column="3" Orientation="Horizontal">
                       <StackPanel.Styles>
                         <Style Selector="Button">
@@ -79,7 +82,7 @@
                           <Setter Property="Width" Value="16"></Setter>
                         </Style>
                         <Style Selector="Button:pointerover">
-                          <Setter Property="Background" Value="#555555"></Setter>
+                          <Setter Property="Background" Value="#666666"></Setter>
                         </Style>
                         <Style Selector="Button PathIcon">
                           <Setter Property="Height" Value="10"></Setter>
@@ -102,18 +105,18 @@
                   </Grid>
                 </Border>
                 <Border CornerRadius="6" Margin="10" ClipToBounds="True" BorderThickness="1" BorderBrush="Black"
-                  Background="#333333" IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).MinimalView}">
+                  Background="#333333" IsVisible="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).ShowExpandedView}">
                   <StackPanel Orientation="Vertical" Margin="8">
                     <Grid RowDefinitions="*" ColumnDefinitions="Auto,Auto,*,Auto" Height="80">
                       <Border Grid.Column="0" Grid.Row="0" CornerRadius="7" ClipToBounds="True" BorderBrush="Black"
                         BorderThickness="1">
                         <Border CornerRadius="7" ClipToBounds="True">
                           <Panel>
-                            <Image Source="../Images/thumb-placeholder.png" Stretch="UniformToFill"
+                            <Image Source="../Images/sample-thn-256.jpg" Stretch="UniformToFill"
                               RenderOptions.BitmapInterpolationMode="MediumQuality" />
-                            <Ellipse Width="22" Height="22" Fill="Black" VerticalAlignment="Top" HorizontalAlignment="Left"
+                            <Ellipse Width="22" Height="22" Fill="#AA000000" VerticalAlignment="Top" HorizontalAlignment="Left"
                               Margin="2 2 0 0"  />
-                            <PathIcon Classes="compact-render-successful" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left"
+                            <PathIcon Classes="compact-rendering" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left"
                               Margin="3 5 0 0"></PathIcon>
                           </Panel>
                         </Border>
@@ -158,16 +161,24 @@
                             <Setter Property="CornerRadius" Value="6"></Setter>
                             <Setter Property="Margin" Value="4"></Setter>
                             <Setter Property="BorderThickness" Value="0"></Setter>
+                            <Setter Property="Height" Value="32"></Setter>
+                            <Setter Property="Width" Value="32"></Setter>
                           </Style>
                           <Style Selector="Button:pointerover">
-                            <Setter Property="Background" Value="#555555"></Setter>
+                            <Setter Property="Background" Value="#666666"></Setter>
+                          </Style>
+                          <Style Selector="Button PathIcon">
+                            <Setter Property="Height" Value="16"></Setter>
+                            <Setter Property="Width" Value="16"></Setter>
                           </Style>
                         </StackPanel.Styles>
-                        <Button Height="40" Width="40"
+                        <Button
                           ToolTip.Tip="Retry rendering">
                           <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon></Button>
-                        <Button Height="40" Width="40"
-                          ToolTip.Tip="Remove from queue">X</Button>
+                        <Button
+                          ToolTip.Tip="Remove from queue">
+                          <PathIcon Data="{StaticResource dismiss_regular}"></PathIcon>
+                        </Button>
                         <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                           <Button ToolTip.Tip="Move up in queue">
                             <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>

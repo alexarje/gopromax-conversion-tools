@@ -7,7 +7,9 @@ public partial class RenderQueueViewModel : ViewModelBase
 {
     public SortableObservableCollection<object> RenderQueue { get; } = new SortableObservableCollection<object>();
 
-    [ObservableProperty] public partial bool MinimalView { get; set; } = false;
+    [ObservableProperty] 
+    public partial bool ShowExpandedView { get; set; } = true;
+    
     
     public RenderQueueViewModel()
     {
