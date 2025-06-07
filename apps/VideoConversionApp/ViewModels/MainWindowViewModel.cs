@@ -15,12 +15,15 @@ public partial class MainWindowViewModel : ViewModelBase
     public partial ConversionPreviewViewModel? ConversionPreviewViewModel { get; set; }
     [ObservableProperty]
     public partial RenderSettingsViewModel? RenderSettingsViewModel { get; set; }
+    [ObservableProperty]
+    public partial RenderQueueViewModel? RenderQueueViewModel { get; set; }
     
     public MainWindowViewModel(IServiceProvider? serviceProvider)
     {
         MediaSelectionViewModel = serviceProvider?.GetRequiredService<MediaSelectionViewModel>();
         ConversionPreviewViewModel = serviceProvider?.GetRequiredService<ConversionPreviewViewModel>();
         RenderSettingsViewModel = serviceProvider?.GetRequiredService<RenderSettingsViewModel>();
+        RenderQueueViewModel = serviceProvider?.GetRequiredService<RenderQueueViewModel>();
         
         if (Design.IsDesignMode)
         {

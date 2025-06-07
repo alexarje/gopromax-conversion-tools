@@ -2,25 +2,111 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
   mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+  x:DataType="vm:RenderQueueViewModel"
   x:Class="VideoConversionApp.Views.RenderQueueView">
-  
-  
+
+  <Design.DataContext>
+    <vm:RenderQueueViewModel />
+  </Design.DataContext>
+
   <DockPanel>
     <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>
-        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-          FontSize="16" FontWeight="Bold">Render Queue</TextBlock>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+          <Border BorderThickness="0 0 1 0" BorderBrush="Gray" VerticalAlignment="Center">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0 0 12 0"
+              FontSize="16" FontWeight="Bold">
+              Render Queue
+            </TextBlock>
+          </Border>
+          <Button Classes="basic-transparent">
+            <Button.Content>
+              <StackPanel Orientation="Horizontal" Margin="8 0 0 0">
+                <PathIcon Data="{StaticResource delete_regular}"></PathIcon>
+                <TextBlock Margin="8">Clear queue</TextBlock>
+              </StackPanel>
+            </Button.Content>
+          </Button>  
+        </StackPanel>
       </Panel>
     </Border>
     <Border Classes="pane-body pb-lb">
-      <Grid ColumnDefinitions="*" RowDefinitions="*" >
-        
-        <TextBlock Grid.Row="0" Grid.Column="0"
-          HorizontalAlignment="Center"
-          Margin="0 20 0 20" FontSize="14">
-          blabla
-        </TextBlock>
+      <Grid ColumnDefinitions="*" RowDefinitions="*">
+
+        <ListBox ItemsSource="{Binding RenderQueue}" BorderBrush="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border CornerRadius="6" Margin="10" ClipToBounds="True" BorderThickness="1" BorderBrush="Black"
+                Background="#333333">
+                <StackPanel Orientation="Vertical" Margin="8">
+                  <Grid RowDefinitions="*" ColumnDefinitions="Auto,Auto,*,Auto" Height="80">
+                    <Border Grid.Column="0" Grid.Row="0" CornerRadius="7" ClipToBounds="True" BorderBrush="Black"
+                      BorderThickness="1">
+                      <Border CornerRadius="7" ClipToBounds="True">
+                        <Image Source="../Images/thumb-placeholder.png" Stretch="UniformToFill"
+                          RenderOptions.BitmapInterpolationMode="MediumQuality" />
+                      </Border>
+                    </Border>
+
+                    <Grid Grid.Column="1" RowDefinitions="2*,3*,3*,*,3*,3*,2*" Margin="10 0 0 0">
+                      <TextBlock Grid.Column="0" Grid.Row="1" Text="GS123234.360"
+                        TextTrimming="CharacterEllipsis" FontWeight="Bold"
+                        Margin="0,0,6,0" HorizontalAlignment="Left" />
+                      <TextBlock Grid.Column="0" Grid.Row="2" Text="00:45:30"
+                        TextTrimming="CharacterEllipsis"
+                        Margin="0,0,6,0" HorizontalAlignment="Left" />
+                      <TextBlock Grid.Column="0" Grid.Row="4" Text="12.3.2025 12:34"
+                        TextTrimming="CharacterEllipsis"
+                        Margin="0,0,6,0" HorizontalAlignment="Left" />
+                      <TextBlock Grid.Column="0" Grid.Row="5" Text="345.6MB"
+                        TextTrimming="CharacterEllipsis"
+                        Margin="0,0,6,0" HorizontalAlignment="Left" />
+                    </Grid>
+                    
+                    <Border Grid.Column="2" BorderBrush="#444444" BorderThickness="2 0 2 0" Margin="20 0 20 0">
+                      <Grid RowDefinitions="2*,3*,3*,*,3*,3*,2*" ColumnDefinitions="Auto, *" Margin="10 0 0 0">
+                        <Grid.Styles>
+                          <Style Selector="TextBlock">
+                            <Setter Property="Margin" Value="1 0 8 1"></Setter>
+                          </Style>
+                        </Grid.Styles>
+                        <TextBlock Grid.Column="0" Grid.Row="1">Output:</TextBlock>
+                        <TextBlock Grid.Column="1" Grid.Row="1">/tmp/foo/bar/video-12335.mov</TextBlock>
+                        <TextBlock Grid.Column="0" Grid.Row="2">Orientation:</TextBlock>
+                        <TextBlock Grid.Column="1" Grid.Row="2">45 / 23 / 56</TextBlock>
+                        <TextBlock Grid.Column="0" Grid.Row="4">Crop:</TextBlock>
+                        <TextBlock Grid.Column="1" Grid.Row="4">00:00:15 - 00:02:12</TextBlock>
+                        <TextBlock Grid.Column="0" Grid.Row="5">Cropped duration:</TextBlock>
+                        <TextBlock Grid.Column="1" Grid.Row="5">00:01:58</TextBlock>
+                      </Grid>
+                    </Border>
+                    
+                    <StackPanel Grid.Column="3" Orientation="Horizontal">
+                      <Button Height="40" Width="40" Margin="0 0 4 0">
+                        <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon></Button>
+                      <Button Height="40" Width="40" Margin="0 0 8 0">X</Button>
+                      <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                        <Button>
+                          <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>
+                        </Button>
+                        <Button>
+                          <PathIcon Data="{StaticResource arrow_down_regular}"></PathIcon>
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+
+                  </Grid>
+                  <Border CornerRadius="6" ClipToBounds="True" Margin="0 10 0 0">
+                    <ProgressBar Height="20" Value="34"></ProgressBar>
+                  </Border>
+                </StackPanel>
+
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
       </Grid>
     </Border>
   </DockPanel>

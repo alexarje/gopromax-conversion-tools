@@ -37,7 +37,7 @@ public partial class RenderSettingsViewModel : ViewModelBase
     }
     
     [ObservableProperty]
-    public partial bool IsOutputToSelectedDirSelected { get; set; }
+    public partial bool IsOutputToSelectedDirSelected { get; set; } = true;
 
     public bool IsOtherVideoCodecSelected
     {

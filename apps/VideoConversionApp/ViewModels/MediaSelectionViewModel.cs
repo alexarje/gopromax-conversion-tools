@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -14,6 +12,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
+using VideoConversionApp.Utils;
 using VideoConversionApp.ViewModels.Components;
 
 namespace VideoConversionApp.ViewModels;
@@ -27,16 +26,7 @@ public partial class MediaSelectionViewModel : MainViewModelPart
     private readonly IConversionManager _conversionManager;
 
 
-    // This is a bit ridiculous, how we do not have sort available in ObservableCollection...
-    public class SortableObservableCollection<T> : ObservableCollection<T>
-    {
-        public void Sort(Comparison<T> comparison)
-        {
-            ((List<T>)Items).Sort(comparison);
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
-    }
-    
+
     public bool SortDescending
     {
         get => field;
