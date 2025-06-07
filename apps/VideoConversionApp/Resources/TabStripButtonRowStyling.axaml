@@ -1,0 +1,49 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Add Resources Here -->
+
+  
+  <ControlTheme x:Key="TabStripButtonRowItem"
+    TargetType="TabStripItem">
+    <Setter Property="Background" Value="#222222" />
+    <Setter Property="Padding" Value="8"></Setter>
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource ThemeForegroundLowBrush}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ContentPresenter Name="PART_ContentPresenter"
+          Padding="{TemplateBinding Padding}"
+          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+          Background="{TemplateBinding Background}"
+          BorderBrush="{TemplateBinding BorderBrush}"
+          BorderThickness="{TemplateBinding BorderThickness}"
+          Content="{TemplateBinding Content}"
+          ContentTemplate="{TemplateBinding ContentTemplate}"
+          CornerRadius="{TemplateBinding CornerRadius}" />
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Black"></Setter>
+      <Setter Property="Foreground" Value="{DynamicResource ThemeForegroundBrush}" />
+    </Style>
+  </ControlTheme>
+  
+    
+  <ControlTheme x:Key="TabStripButtonRow" TargetType="TabStrip">
+    <Setter Property="ItemContainerTheme" Value="{StaticResource TabStripButtonRowItem}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ItemsPresenter Name="PART_ItemsPresenter"
+          ItemsPanel="{TemplateBinding ItemsPanel}" />
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="ItemsPanel">
+      <ItemsPanelTemplate>
+        <WrapPanel />
+      </ItemsPanelTemplate>
+    </Setter>
+  </ControlTheme>
+  
+</ResourceDictionary>

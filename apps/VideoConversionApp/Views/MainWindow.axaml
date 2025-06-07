@@ -101,7 +101,8 @@
           ColumnDefinitions="4*, 10*" 
           RowDefinitions="*">
           
-          <v:RenderSettingsView Grid.Row="0" Grid.Column="0"/>
+          <v:RenderSettingsView DataContext="{Binding RenderSettingsViewModel}" 
+            Grid.Row="0" Grid.Column="0"/>
           
           <v:RenderQueueView Grid.Row="0" Grid.Column="1" />
            

@@ -14,6 +14,7 @@
           <MergeResourceInclude Source="./Resources/StreamingIcons.axaml"></MergeResourceInclude>
           <MergeResourceInclude Source="./Resources/MainNavBarTabItemStyling.axaml"></MergeResourceInclude>
           <MergeResourceInclude Source="./Resources/StyledSlider.axaml"></MergeResourceInclude>
+          <MergeResourceInclude Source="./Resources/TabStripButtonRowStyling.axaml"></MergeResourceInclude>
         </ResourceDictionary.MergedDictionaries>
       </ResourceDictionary>
     </Application.Resources>

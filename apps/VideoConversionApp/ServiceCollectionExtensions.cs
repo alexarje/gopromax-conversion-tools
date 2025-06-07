@@ -21,5 +21,6 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<MainWindowViewModel>();
         collection.AddSingleton<MediaSelectionViewModel>();
         collection.AddSingleton<ConversionPreviewViewModel>();
+        collection.AddSingleton<RenderSettingsViewModel>();
     }
 }
