@@ -11,6 +11,23 @@
     <vm:RenderQueueViewModel />
   </Design.DataContext>
 
+  <UserControl.Styles>
+    <Style Selector="PathIcon.compact-render-successful">
+      <Setter Property="Data" Value="{StaticResource checkmark_circle_regular}"></Setter>
+      <Setter Property="Foreground" Value="Chartreuse"></Setter>
+    </Style>
+    <Style Selector="PathIcon.compact-render-failed">
+      <Setter Property="Data" Value="{StaticResource error_circle_regular}"></Setter>
+      <Setter Property="Foreground" Value="Firebrick"></Setter>
+    </Style>
+    <Style Selector="PathIcon.compact-rendering">
+      <Setter Property="Data" Value="{StaticResource caret_right_regular}"></Setter>
+    </Style>    
+    <Style Selector="PathIcon.compact-queued">
+      <Setter Property="Data" Value="{StaticResource keyboard_shift_uppercase_regular}"></Setter>
+    </Style>   
+  </UserControl.Styles>
+  
   <DockPanel>
     <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>
@@ -29,81 +46,154 @@
               </StackPanel>
             </Button.Content>
           </Button>  
+          <ToggleButton Classes="basic-transparent">
+            <StackPanel Orientation="Horizontal" Margin="8 0 0 0">
+              <PathIcon Data="{StaticResource text_expand_regular}"></PathIcon>
+              <TextBlock Margin="8">Show expanded</TextBlock>
+            </StackPanel>
+          </ToggleButton>
         </StackPanel>
       </Panel>
     </Border>
     <Border Classes="pane-body pb-lb">
       <Grid ColumnDefinitions="*" RowDefinitions="*">
 
-        <ListBox ItemsSource="{Binding RenderQueue}" BorderBrush="Transparent">
+        <ListBox Name="RenderQueueListBox" ItemsSource="{Binding RenderQueue}" BorderBrush="Transparent">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <Border CornerRadius="6" Margin="10" ClipToBounds="True" BorderThickness="1" BorderBrush="Black"
-                Background="#333333">
-                <StackPanel Orientation="Vertical" Margin="8">
-                  <Grid RowDefinitions="*" ColumnDefinitions="Auto,Auto,*,Auto" Height="80">
-                    <Border Grid.Column="0" Grid.Row="0" CornerRadius="7" ClipToBounds="True" BorderBrush="Black"
-                      BorderThickness="1">
-                      <Border CornerRadius="7" ClipToBounds="True">
-                        <Image Source="../Images/thumb-placeholder.png" Stretch="UniformToFill"
-                          RenderOptions.BitmapInterpolationMode="MediumQuality" />
-                      </Border>
-                    </Border>
-
-                    <Grid Grid.Column="1" RowDefinitions="2*,3*,3*,*,3*,3*,2*" Margin="10 0 0 0">
-                      <TextBlock Grid.Column="0" Grid.Row="1" Text="GS123234.360"
-                        TextTrimming="CharacterEllipsis" FontWeight="Bold"
-                        Margin="0,0,6,0" HorizontalAlignment="Left" />
-                      <TextBlock Grid.Column="0" Grid.Row="2" Text="00:45:30"
-                        TextTrimming="CharacterEllipsis"
-                        Margin="0,0,6,0" HorizontalAlignment="Left" />
-                      <TextBlock Grid.Column="0" Grid.Row="4" Text="12.3.2025 12:34"
-                        TextTrimming="CharacterEllipsis"
-                        Margin="0,0,6,0" HorizontalAlignment="Left" />
-                      <TextBlock Grid.Column="0" Grid.Row="5" Text="345.6MB"
-                        TextTrimming="CharacterEllipsis"
-                        Margin="0,0,6,0" HorizontalAlignment="Left" />
-                    </Grid>
-                    
-                    <Border Grid.Column="2" BorderBrush="#444444" BorderThickness="2 0 2 0" Margin="20 0 20 0">
-                      <Grid RowDefinitions="2*,3*,3*,*,3*,3*,2*" ColumnDefinitions="Auto, *" Margin="10 0 0 0">
-                        <Grid.Styles>
-                          <Style Selector="TextBlock">
-                            <Setter Property="Margin" Value="1 0 8 1"></Setter>
-                          </Style>
-                        </Grid.Styles>
-                        <TextBlock Grid.Column="0" Grid.Row="1">Output:</TextBlock>
-                        <TextBlock Grid.Column="1" Grid.Row="1">/tmp/foo/bar/video-12335.mov</TextBlock>
-                        <TextBlock Grid.Column="0" Grid.Row="2">Orientation:</TextBlock>
-                        <TextBlock Grid.Column="1" Grid.Row="2">45 / 23 / 56</TextBlock>
-                        <TextBlock Grid.Column="0" Grid.Row="4">Crop:</TextBlock>
-                        <TextBlock Grid.Column="1" Grid.Row="4">00:00:15 - 00:02:12</TextBlock>
-                        <TextBlock Grid.Column="0" Grid.Row="5">Cropped duration:</TextBlock>
-                        <TextBlock Grid.Column="1" Grid.Row="5">00:01:58</TextBlock>
-                      </Grid>
-                    </Border>
-                    
+              <Grid Name="ItemRoot" ColumnDefinitions="*" MaxWidth="{Binding $parent.Bounds.Width}">
+                <Border CornerRadius="6" Margin="5" ClipToBounds="True" BorderThickness="1" BorderBrush="Black"
+                  Background="#333333"
+                  IsVisible="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).MinimalView}">
+                  <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="4">
+                    <PathIcon Grid.Column="0" Classes="compact-render-failed" Height="16" Margin="4 0 0 0"></PathIcon>
+                    <TextBlock Grid.Column="1" Margin="0 0 8 0" Width="125" VerticalAlignment="Center" TextAlignment="Center">GS10235.360</TextBlock>
+                    <ProgressBar Grid.Column="2" Value="100" CornerRadius="6" Height="16" Margin="0 0 6 0"></ProgressBar>
                     <StackPanel Grid.Column="3" Orientation="Horizontal">
-                      <Button Height="40" Width="40" Margin="0 0 4 0">
+                      <StackPanel.Styles>
+                        <Style Selector="Button">
+                          <Setter Property="CornerRadius" Value="2"></Setter>
+                          <Setter Property="Margin" Value="4"></Setter>
+                          <Setter Property="BorderThickness" Value="0"></Setter>
+                          <Setter Property="Height" Value="16"></Setter>
+                          <Setter Property="Width" Value="16"></Setter>
+                        </Style>
+                        <Style Selector="Button:pointerover">
+                          <Setter Property="Background" Value="#555555"></Setter>
+                        </Style>
+                        <Style Selector="Button PathIcon">
+                          <Setter Property="Height" Value="10"></Setter>
+                        </Style>
+                      </StackPanel.Styles>
+                      <Button
+                        ToolTip.Tip="Retry rendering">
                         <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon></Button>
-                      <Button Height="40" Width="40" Margin="0 0 8 0">X</Button>
-                      <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                        <Button>
-                          <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>
-                        </Button>
-                        <Button>
-                          <PathIcon Data="{StaticResource arrow_down_regular}"></PathIcon>
-                        </Button>
-                      </StackPanel>
+                      <Button
+                        ToolTip.Tip="Remove from queue" FontSize="8">
+                        <PathIcon Data="{StaticResource dismiss_regular}"></PathIcon>
+                      </Button>
+                      <Button ToolTip.Tip="Move up in queue">
+                        <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>
+                      </Button>
+                      <Button ToolTip.Tip="Move down in queue">
+                        <PathIcon Data="{StaticResource arrow_down_regular}"></PathIcon>
+                      </Button>
                     </StackPanel>
-
                   </Grid>
-                  <Border CornerRadius="6" ClipToBounds="True" Margin="0 10 0 0">
-                    <ProgressBar Height="20" Value="34"></ProgressBar>
-                  </Border>
-                </StackPanel>
+                </Border>
+                <Border CornerRadius="6" Margin="10" ClipToBounds="True" BorderThickness="1" BorderBrush="Black"
+                  Background="#333333" IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).MinimalView}">
+                  <StackPanel Orientation="Vertical" Margin="8">
+                    <Grid RowDefinitions="*" ColumnDefinitions="Auto,Auto,*,Auto" Height="80">
+                      <Border Grid.Column="0" Grid.Row="0" CornerRadius="7" ClipToBounds="True" BorderBrush="Black"
+                        BorderThickness="1">
+                        <Border CornerRadius="7" ClipToBounds="True">
+                          <Panel>
+                            <Image Source="../Images/thumb-placeholder.png" Stretch="UniformToFill"
+                              RenderOptions.BitmapInterpolationMode="MediumQuality" />
+                            <Ellipse Width="22" Height="22" Fill="Black" VerticalAlignment="Top" HorizontalAlignment="Left"
+                              Margin="2 2 0 0"  />
+                            <PathIcon Classes="compact-render-successful" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left"
+                              Margin="3 5 0 0"></PathIcon>
+                          </Panel>
+                        </Border>
+                      </Border>
 
-              </Border>
+                      <Grid Grid.Column="1" RowDefinitions="2*,3*,3*,*,3*,3*,2*" Margin="10 0 0 0">
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="GS123234.360"
+                          TextTrimming="CharacterEllipsis" FontWeight="Bold"
+                          Margin="0,0,6,0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="0" Grid.Row="2" Text="00:45:30"
+                          TextTrimming="CharacterEllipsis"
+                          Margin="0,0,6,0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="0" Grid.Row="4" Text="12.3.2025 12:34"
+                          TextTrimming="CharacterEllipsis"
+                          Margin="0,0,6,0" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="0" Grid.Row="5" Text="345.6MB"
+                          TextTrimming="CharacterEllipsis"
+                          Margin="0,0,6,0" HorizontalAlignment="Left" />
+                      </Grid>
+                      
+                      <Border Grid.Column="2" BorderBrush="#444444" BorderThickness="2 0 2 0" Margin="20 0 20 0">
+                        <Grid RowDefinitions="2*,3*,3*,*,3*,3*,2*" ColumnDefinitions="Auto, *" Margin="10 0 0 0">
+                          <Grid.Styles>
+                            <Style Selector="TextBlock">
+                              <Setter Property="Margin" Value="1 0 8 1"></Setter>
+                            </Style>
+                          </Grid.Styles>
+                          <TextBlock Grid.Column="0" Grid.Row="1">Output:</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="1">/tmp/foo/bar/video-12335.mov</TextBlock>
+                          <TextBlock Grid.Column="0" Grid.Row="2">Orientation:</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="2">45 / 23 / 56</TextBlock>
+                          <TextBlock Grid.Column="0" Grid.Row="4">Crop:</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="4">00:00:15 - 00:02:12</TextBlock>
+                          <TextBlock Grid.Column="0" Grid.Row="5">Cropped duration:</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="5">00:01:58</TextBlock>
+                        </Grid>
+                      </Border>
+                      
+                      <StackPanel Grid.Column="3" Orientation="Horizontal">
+                        <StackPanel.Styles>
+                          <Style Selector="Button">
+                            <Setter Property="CornerRadius" Value="6"></Setter>
+                            <Setter Property="Margin" Value="4"></Setter>
+                            <Setter Property="BorderThickness" Value="0"></Setter>
+                          </Style>
+                          <Style Selector="Button:pointerover">
+                            <Setter Property="Background" Value="#555555"></Setter>
+                          </Style>
+                        </StackPanel.Styles>
+                        <Button Height="40" Width="40"
+                          ToolTip.Tip="Retry rendering">
+                          <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon></Button>
+                        <Button Height="40" Width="40"
+                          ToolTip.Tip="Remove from queue">X</Button>
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                          <Button ToolTip.Tip="Move up in queue">
+                            <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>
+                          </Button>
+                          <Button ToolTip.Tip="Move down in queue">
+                            <PathIcon Data="{StaticResource arrow_down_regular}"></PathIcon>
+                          </Button>
+                        </StackPanel>
+                      </StackPanel>
+
+                    </Grid>
+                    <Border CornerRadius="6" ClipToBounds="True" Margin="0 10 0 0">
+                      <ProgressBar Height="20" Value="34"></ProgressBar>
+                    </Border>
+                    <Panel Name="ErrorHolderPanel" Margin="0 10 0 0" Width="{Binding $parent.Bounds.Width}">
+                      <Border Padding="10" Background="rgba(255,20,0,200)" CornerRadius="6" 
+                        BorderThickness="2 0 2 0" BorderBrush="Red">
+                        <Panel ClipToBounds="True">
+                          <TextBlock TextWrapping="WrapWithOverflow" MaxWidth="{Binding #ErrorHolderPanel.Bounds.Width}" ClipToBounds="True" Text="Warning CS8604 : Possible null reference argument for parameter 'item' in 'int IListIImage.IndexOf(IImage item)' Warning CS8604 : Possible null reference argument for parameter 'item' in 'int IListIImage.IndexOf(IImage item)' Warning CS8604 : Possible null reference argument for parameter 'item' in 'int IListIImage.IndexOf(IImage item)'"></TextBlock>
+                        </Panel>
+                      </Border>
+                    </Panel>
+                  </StackPanel>
+
+                </Border>
+              </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
