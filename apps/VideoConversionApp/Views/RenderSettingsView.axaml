@@ -21,7 +21,7 @@
 
     <Border Classes="pane-body pb-lb">
 
-      <StackPanel Orientation="Vertical" Margin="20">
+      <StackPanel Orientation="Vertical" Margin="20 0">
 
         <!-- Export path etc -->
         <TextBlock Classes="control-group-heading" Margin="4 20 0 10">Output Files</TextBlock>

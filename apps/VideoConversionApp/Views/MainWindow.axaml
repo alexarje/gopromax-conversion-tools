@@ -99,12 +99,18 @@
         <!-- Content -->
         <Grid Name="RenderGrid" 
           ColumnDefinitions="4*, 10*" 
-          RowDefinitions="*">
+          RowDefinitions="10*,4*">
           
-          <v:RenderSettingsView DataContext="{Binding RenderSettingsViewModel}" 
-            Grid.Row="0" Grid.Column="0"/>
+          <ScrollViewer Grid.Row="0" Grid.Column="0">
+            <v:RenderSettingsView DataContext="{Binding RenderSettingsViewModel}" />
+          </ScrollViewer>
           
-          <v:RenderQueueView DataContext="{Binding RenderQueueViewModel}" Grid.Row="0" Grid.Column="1" />
+          
+          <v:RenderQueueView DataContext="{Binding RenderQueueViewModel}" 
+            Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" />
+          
+          <v:RenderProcessControlView 
+            Grid.Row="1" Grid.Column="0" /> 
            
         </Grid>
         
