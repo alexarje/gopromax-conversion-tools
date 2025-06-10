@@ -1,3 +1,4 @@
+using System;
 using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Abstractions;
@@ -8,6 +9,10 @@ namespace VideoConversionApp.Abstractions;
 /// </summary>
 public interface IConversionManager
 {
-    void AddToConversionCandidates(ConvertibleVideoModel? conversionCandidate);
-    void RemoveFromConversionCandidates(ConvertibleVideoModel? conversionCandidate);
+    public event EventHandler<IConvertibleVideoModel?> PreviewedVideoChanged;
+    
+    IConvertibleVideoModel AddVideoToPool(IMediaInfo mediaInfo);
+    void RemoveVideoFromPool(IConvertibleVideoModel video);
+    void SetPreviewedVideo(IConvertibleVideoModel? video);
+    IConvertibleVideoModel? GetPreviewedVideo();
 }

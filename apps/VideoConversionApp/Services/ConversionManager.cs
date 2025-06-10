@@ -7,29 +7,126 @@ namespace VideoConversionApp.Services;
 
 public class ConversionManager : IConversionManager
 {
-    private List<ConvertibleVideoModel?> _convertibleVideoModels = new ();
-    public IReadOnlyList<ConvertibleVideoModel?> ConversionCandidates => _convertibleVideoModels;
+    /// <summary>
+    /// Represents a video that is entered into ConversionManager and also managed by it.
+    /// Hence, the class itself is hidden and the model is exposed just by its interface.
+    /// Instances are created by ConversionManager.
+    /// </summary>
+    private class ConvertibleVideoModel : IConvertibleVideoModel
+    {
+        public event EventHandler<AvFilterFrameRotation>? FrameRotationUpdated;
+        public event EventHandler<TimelineCrop>? TimelineCropUpdated;
+        public event EventHandler<bool>? IsEnabledForConversionUpdated;
+        public event EventHandler? SettingsChanged;
+
+        public IMediaInfo MediaInfo { get; private set; }
+        public AvFilterFrameRotation FrameRotation
+        {
+            get => field;
+            set
+            {
+                if (value == field)
+                    return;
+                field = value;
+                FrameRotationUpdated?.Invoke(this, value);
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        public TimelineCrop TimelineCrop
+        {
+            get => field;
+            set
+            {
+                if (value == field)
+                    return;
+                field = value;
+                TimelineCropUpdated?.Invoke(this, value);
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        public bool IsEnabledForConversion
+        {
+            get => field;
+            set
+            {
+                if (value == field)
+                    return;
+                field = value;
+                IsEnabledForConversionUpdated?.Invoke(this, value);
+            }
+        } = false;
+
+        
+        /// <summary>
+        /// Returns true if this model's conversion settings have been modified.
+        /// </summary>
+        public bool HasNonDefaultSettings
+        {
+            get
+            {
+                var rotationChanged = FrameRotation.Pitch != 0 || FrameRotation.Yaw != 0 || FrameRotation.Roll != 0;
+                var startCropped = TimelineCrop.StartTimeSeconds != 0 && TimelineCrop.StartTimeSeconds != null;
+                var endCropped = TimelineCrop.EndTimeSeconds != MediaInfo.DurationInSeconds && TimelineCrop.EndTimeSeconds != null;
+
+                return rotationChanged || startCropped || endCropped;
+            }
+        }
+
+        public ConvertibleVideoModel(IMediaInfo mediaInfo)
+        {
+            MediaInfo = mediaInfo;
+            FrameRotation = AvFilterFrameRotation.Zero;
+            TimelineCrop = new TimelineCrop();
+        }
+
+        public void RemoveListeners()
+        {
+            SettingsChanged = null;
+            FrameRotationUpdated = null;
+            TimelineCropUpdated = null;
+            IsEnabledForConversionUpdated = null;
+        }
+    }
+    
+    public event EventHandler<IConvertibleVideoModel?>? PreviewedVideoChanged;
+    
+    private List<ConvertibleVideoModel> _convertibleVideoModels = new ();
+    public IReadOnlyList<IConvertibleVideoModel> ConversionCandidates => _convertibleVideoModels;
+    private IConvertibleVideoModel? _previewedVideo;
 
     public ConversionManager()
     {
     }
 
-    public void AddToConversionCandidates(ConvertibleVideoModel? conversionCandidate)
+
+    public IConvertibleVideoModel AddVideoToPool(IMediaInfo mediaInfo)
     {
-        if (conversionCandidate == null)
-            throw new ArgumentNullException(nameof(conversionCandidate));
+        var model = new ConvertibleVideoModel(mediaInfo);
+        _convertibleVideoModels.Add(model);
+        return model;
+    }
+    
+    public void RemoveVideoFromPool(IConvertibleVideoModel video)
+    {
+        if (video is not ConvertibleVideoModel v)
+            throw new ArgumentException("Type mismatch");
         
-        if (!_convertibleVideoModels.Contains(conversionCandidate))
-            _convertibleVideoModels.Add(conversionCandidate);
-        
+        _convertibleVideoModels.Remove(v);
+        v.RemoveListeners();
     }
 
-    public void RemoveFromConversionCandidates(ConvertibleVideoModel? conversionCandidate)
+    public IConvertibleVideoModel? GetPreviewedVideo() => _previewedVideo;
+    
+    public void SetPreviewedVideo(IConvertibleVideoModel? video)
     {
-        if (conversionCandidate == null)
-            return;
-        
-        if (_convertibleVideoModels.Contains(conversionCandidate))
-            _convertibleVideoModels.Remove(conversionCandidate);
+        if (_previewedVideo != video)
+        {
+            _previewedVideo = video;
+            PreviewedVideoChanged?.Invoke(this, video);
+        }
     }
+
+    
 }

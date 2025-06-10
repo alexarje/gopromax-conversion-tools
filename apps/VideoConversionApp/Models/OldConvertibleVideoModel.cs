@@ -5,9 +5,10 @@ namespace VideoConversionApp.Models;
 /// <summary>
 /// Represents a single convertible 360 video, along with its conversion parameters.
 /// </summary>
-public class ConvertibleVideoModel
+[Obsolete]
+public class OldConvertibleVideoModel
 {
-    public MediaInfo MediaInfo { get; private set; }
+    public OldMediaInfo OldMediaInfo { get; private set; }
     public bool IsEnabledForConversion { get; set; } = false;
     
     public AvFilterFrameRotation FrameRotation { get; set; }
@@ -24,7 +25,7 @@ public class ConvertibleVideoModel
         {
             var rotationChanged = FrameRotation.Pitch != 0 || FrameRotation.Yaw != 0 || FrameRotation.Roll != 0;
             var startCropped = TimelineCrop.StartTimeSeconds != 0 && TimelineCrop.StartTimeSeconds != null;
-            var endCropped = TimelineCrop.EndTimeSeconds != MediaInfo.DurationInSeconds && TimelineCrop.EndTimeSeconds != null;
+            var endCropped = TimelineCrop.EndTimeSeconds != OldMediaInfo.DurationInSeconds && TimelineCrop.EndTimeSeconds != null;
 
             return rotationChanged || startCropped || endCropped;
         }
@@ -39,10 +40,10 @@ public class ConvertibleVideoModel
         OnConversionSettingsChanged?.Invoke(this, HasModifiedSettings);
     }
     
-    
-    public ConvertibleVideoModel(MediaInfo mediaInfo)
+    // TODO make protected
+    public OldConvertibleVideoModel(OldMediaInfo oldMediaInfo)
     {
-        MediaInfo = mediaInfo;
+        OldMediaInfo = oldMediaInfo;
         FrameRotation = AvFilterFrameRotation.Zero;
         TimelineCrop = new TimelineCrop();
     }

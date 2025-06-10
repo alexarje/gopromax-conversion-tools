@@ -1,11 +1,7 @@
 using System;
-using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using LibVLCSharp.Avalonia;
-using LibVLCSharp.Shared;
+using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
-using VideoConversionApp.Views.Components;
 
 namespace VideoConversionApp.ViewModels.Components;
 
@@ -22,11 +18,11 @@ public partial class VideoPlayerViewModel : ViewModelBase
     [ObservableProperty]
     public partial Uri? VideoUri { get; set; } = null;
 
-    public ConvertibleVideoModel? SourceConvertibleVideo { get; set; } = null;
+    public IConvertibleVideoModel? SourceConvertibleVideo { get; set; } = null;
     public KeyFrameVideo KeyFrameVideo { get; set; } = null!;
     
     // For parent viewmodel needs, actually. This is a bit of a mess.
-    public VideoPlayerView AssociatedView { get; set; } = null!; 
+    //public VideoPlayerView AssociatedView { get; set; } = null!; 
     
     
     // "Read only" properties; set from the VideoPlayerView.
@@ -41,19 +37,52 @@ public partial class VideoPlayerViewModel : ViewModelBase
     [ObservableProperty]
     public partial float VideoPlayerFov { get; set; }
     [ObservableProperty]
-    public partial decimal CropTimelineStartTime { get; set; }
-    [ObservableProperty]
-    public partial decimal CropTimelineEndTime { get; set; } 
+    public partial bool IsDragging { get; set; }
+
+    public decimal CropTimelineStartTime
+    {
+        get => field;
+        set
+        {
+            if (value == field)
+                return;
+            
+            SetProperty(ref field, value);
+            if (SourceConvertibleVideo != null)
+                SourceConvertibleVideo.TimelineCrop = SourceConvertibleVideo.TimelineCrop with { StartTimeSeconds = value };
+        }
+    }
+
+    public decimal CropTimelineEndTime
+    {
+        get => field;
+        set
+        {
+            if (value == field)
+                return;
+            
+            SetProperty(ref field, value);
+            if (SourceConvertibleVideo != null)
+                SourceConvertibleVideo.TimelineCrop = SourceConvertibleVideo.TimelineCrop with { EndTimeSeconds = value };
+        }
+    }
     
-    public VideoPlayerViewModel(ConvertibleVideoModel? sourceConvertibleVideo, KeyFrameVideo? video)
+    public VideoPlayerViewModel(IConvertibleVideoModel? sourceConvertibleVideo, KeyFrameVideo? video)
     {
         SourceConvertibleVideo = sourceConvertibleVideo;
         if (video != null)
         {
             KeyFrameVideo = video;
             VideoUri = new Uri(video.VideoPath);
+            
+            if (sourceConvertibleVideo != null)
+                sourceConvertibleVideo.TimelineCropUpdated += OnSourceVideoTimelineCropUpdated;
         }
     }
-    
-    
+
+    private void OnSourceVideoTimelineCropUpdated(object? sender, TimelineCrop e)
+    {
+        CropTimelineStartTime = e.StartTimeSeconds ?? 0;
+        CropTimelineEndTime = e.EndTimeSeconds ?? SourceConvertibleVideo.MediaInfo.DurationInSeconds;
+    }
 }

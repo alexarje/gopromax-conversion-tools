@@ -7,6 +7,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
 
@@ -36,12 +37,12 @@ public partial class VideoThumbViewModel : ViewModelBase
     /// <summary>
     /// The linked data model.
     /// </summary>
-    public ConvertibleVideoModel? LinkedConvertibleVideoModel { get; set; }
+    public IConvertibleVideoModel? LinkedVideo { get; set; }
 
     private static readonly Bitmap DefaultThumbnail = new (AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/videostrip.png")));
     
     public ICommand OnCloseClickCommand { get; set; }
-    public IRelayCommand<bool> OnSelectFileCommand { get; set; }
+    public IRelayCommand<bool> OnVideoCheckedChangedCommand { get; set; }
     
     public VideoThumbViewModel()
     {

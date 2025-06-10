@@ -31,8 +31,9 @@ public class MediaPreviewService : IMediaPreviewService
     private IAppSettingsService _appSettingsService;
     private readonly IAvFilterFactory _avFilterFactory;
     private List<Thread> _thumbnailQueueProcessingThreads = new();
+    private ConcurrentDictionary<IMediaInfo, byte[]> _thumbnailCache = new();
 
-    private ConcurrentQueue<ThreadWorkItem<(MediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> 
+    private ConcurrentQueue<ThreadWorkItem<(IMediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> 
         _thumbnailGenerationQueue = new();
 
     
@@ -44,11 +45,11 @@ public class MediaPreviewService : IMediaPreviewService
     }
 
     
-    public Task<byte[]?> QueueThumbnailGenerationAsync(MediaInfo mediaInfo, long timePositionMilliseconds)
+    public Task<byte[]?> QueueThumbnailGenerationAsync(IMediaInfo media, long timePositionMilliseconds)
     {
-        var threadWorkItem = new ThreadWorkItem<(MediaInfo, long), TaskCompletionSource<byte[]?>>
+        var threadWorkItem = new ThreadWorkItem<(IMediaInfo, long), TaskCompletionSource<byte[]?>>
         {
-            WorkItem = (mediaInfo, timePositionMilliseconds),
+            WorkItem = (media, timePositionMilliseconds),
             Result = new TaskCompletionSource<byte[]?>()
         };
         _thumbnailGenerationQueue.Enqueue(threadWorkItem);
@@ -130,6 +131,7 @@ public class MediaPreviewService : IMediaPreviewService
                 if (process.ExitCode == 0 && File.Exists(tmpThumbFilePath))
                 {
                     var imgBytes = File.ReadAllBytes(tmpThumbFilePath);
+                    _thumbnailCache.AddOrUpdate(mediaInfo, imgBytes, (_, _) => imgBytes);
                     File.Delete(tmpThumbFilePath);
                     threadWorkItem.Result.TrySetResult(imgBytes);
                 }
@@ -146,7 +148,7 @@ public class MediaPreviewService : IMediaPreviewService
             
     }
 
-    public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(MediaInfo mediaInfo, 
+    public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(IMediaInfo media, 
         SnapshotFrameTransformationSettings settings, int numberOfFrames, 
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
@@ -155,7 +157,7 @@ public class MediaPreviewService : IMediaPreviewService
             throw new ArgumentException("Number of frames must be at least 2");
      
         var appSettings = _appSettingsService.GetSettings();
-        var skipLength = mediaInfo.DurationInSeconds / (numberOfFrames - 1);
+        var skipLength = media.DurationInSeconds / (numberOfFrames - 1);
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
         {
@@ -179,7 +181,7 @@ public class MediaPreviewService : IMediaPreviewService
                 "-stats_period", "0.25",
                 "-vsync", "0",
                 "-filter_complex", avFilterString,
-                "-i", mediaInfo.Filename,
+                "-i", media.Filename,
                 "-map", "[OUTPUT_FRAME]",
                 "-f", "image2",
                 "-s", "672x398",
@@ -255,12 +257,12 @@ public class MediaPreviewService : IMediaPreviewService
         
     }
 
-    public async Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(ConvertibleVideoModel convertibleVideo,
+    public async Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(IConvertibleVideoModel video,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
-        var mediaInfo = convertibleVideo.MediaInfo;
-        var rotation = convertibleVideo.FrameRotation;
+        var mediaInfo = video.MediaInfo;
+        var rotation = video.FrameRotation;
         var appSettings = _appSettingsService.GetSettings();
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
@@ -358,7 +360,7 @@ public class MediaPreviewService : IMediaPreviewService
                     return new KeyFrameVideo()
                     {
                         VideoPath = tmpVideoFilePath,
-                        SourceVideo = convertibleVideo
+                        SourceVideo = video
                     };
                 }
                 throw new Exception($"ExifTool process returned {taggingProcess.ExitCode}");
@@ -383,5 +385,10 @@ public class MediaPreviewService : IMediaPreviewService
             throw;
         }
         
+    }
+
+    public byte[]? GetCachedThumbnail(IMediaInfo media)
+    {
+        return _thumbnailCache.GetValueOrDefault(media);
     }
 }

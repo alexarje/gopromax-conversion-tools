@@ -1,0 +1,14 @@
+using System;
+
+namespace VideoConversionApp.Abstractions;
+
+public interface IMediaInfo
+{
+    public string Filename { get; }
+    public bool IsValidVideo { get; }
+    public bool IsGoProMaxFormat { get; }
+    public decimal DurationInSeconds { get; }
+    public DateTime CreatedDateTime { get; }
+    public long SizeBytes { get; }
+    public string[]? ValidationIssues { get; }
+}

@@ -49,7 +49,7 @@
       ToolTip.Tip="Set selected for conversion"
       IsEnabled="{Binding !HasProblems}"
       IsChecked="{Binding ShowAsSelectedForConversion}"
-      Command="{Binding OnSelectFileCommand}"
+      Command="{Binding OnVideoCheckedChangedCommand}"
       CommandParameter="{Binding IsChecked, RelativeSource={RelativeSource Self}}"></CheckBox>
     <Button Grid.Column="3" Grid.Row="0" Grid.RowSpan="7"  Height="30" 
       Command="{Binding OnCloseClickCommand}"
