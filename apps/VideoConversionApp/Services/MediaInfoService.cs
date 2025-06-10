@@ -75,50 +75,6 @@ public class MediaInfoService : IMediaInfoService
 
     }
     
-    [Obsolete("Use ParseMediaAsync instead")]
-    public async Task<OldMediaInfo> GetMediaInfoAsync(string filename)
-    {
-        if (!File.Exists(filename))
-        {
-            throw new FileNotFoundException(filename);
-        }
-
-        try
-        {
-            if (_libVlc == null)
-                _libVlc = new LibVLC();
-        }
-        catch (VLCException e)
-        {
-            // TODO Figure out what to do...
-            Console.Error.WriteLine(e);
-            throw;
-        }
-
-        var createTimeDefault = File.GetCreationTime(filename);
-        
-        //var mediaInfo = new MediaInfo(filename);
-        var sizeBytes = new FileInfo(filename).Length;
-        
-        using var media = new Media(_libVlc, filename);
-        await media.Parse(MediaParseOptions.ParseLocal, 2000);
-
-        if (media.Duration < 0)
-            return new OldMediaInfo(filename, false, false, 0, 
-                createTimeDefault, sizeBytes, ["Media duration was reported as < 0"]);
-
-        long seconds = media.Duration / 1000;
-        var validationIssues = new List<string>(); 
-        var isGoProMaxFormat = ValidateGoProMaxVideo(media, filename, validationIssues);
-        
-        var s = media.Meta(MetadataType.Date) ?? createTimeDefault.ToString(CultureInfo.CurrentCulture);
-        var createdDateTime = DateTime.Parse(s);
-        
-        return new OldMediaInfo(filename, true, isGoProMaxFormat, media.Duration, createdDateTime, 
-            sizeBytes, validationIssues.ToArray());
-        
-    }
-
 
     /// <summary>
     /// Rudimentary check using LibVLC to determine whether this is a valid .360 GoPro MAX video.

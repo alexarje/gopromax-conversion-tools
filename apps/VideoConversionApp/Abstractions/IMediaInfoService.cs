@@ -14,8 +14,6 @@ public interface IMediaInfoService
     /// </summary>
     /// <param name="filename"></param>
     /// <returns></returns>
-    //Task<OldMediaInfo> GetMediaInfoAsync(string filename);
-    
     Task<IMediaInfo> ParseMediaAsync(string filename);
     
 }
