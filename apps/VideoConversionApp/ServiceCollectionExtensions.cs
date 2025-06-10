@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Models;
 using VideoConversionApp.Services;
 using VideoConversionApp.ViewModels;
 
@@ -17,6 +18,8 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<IAppSettingsService, AppSettingsService>();
         collection.AddSingleton<IConversionManager, ConversionManager>();
         collection.AddSingleton<IAvFilterFactory, AvFilterFactory>();
+        
+        collection.AddSingleton<PreviewVideoPlayerState>();
         
         collection.AddSingleton<MainWindowViewModel>();
         collection.AddSingleton<MediaSelectionViewModel>();

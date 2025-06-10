@@ -29,7 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             MediaSelectionViewModel = new MediaSelectionViewModel(null!, null!, 
                 null!, null!, null!);
-            ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!, null!);
+            ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!, null!, null!);
             RenderSettingsViewModel = new RenderSettingsViewModel();
         }
     }

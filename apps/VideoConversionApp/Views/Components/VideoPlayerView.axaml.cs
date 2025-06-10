@@ -27,6 +27,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     private readonly LibVLC _libVlc = new LibVLC(enableDebugLogs: true);
     private readonly MediaPlayer _mediaPlayer;
 
+    private VideoPlayerViewModel? _previousDataContext;
     private VideoPlayerViewModel? ViewModel => DataContext as VideoPlayerViewModel;
     
     public VideoPlayerView()
@@ -47,8 +48,11 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void PlayerOnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
-        if (ViewModel != null)
-            CalculateAndSetCropMarkerPositions(ViewModel.CropTimelineStartTime, ViewModel.CropTimelineEndTime);
+        if (ViewModel == null)
+            return;
+
+        var playerState = ViewModel.PlayerState;
+        CalculateAndSetCropMarkerPositions(playerState.TimelineCropStartPosition, playerState.TimelineCropEndPosition);
     }
 
     private void MediaPlayerOnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
@@ -72,16 +76,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
             if(_mediaPlayer.Media != null)
                 _mediaPlayer.Media.Dispose();
 
-            // Todo this never gets released so when video is changed, we still get events to the old viewmodel
-            // SO...
-            // Instead
-            // Have a VideoPlayerState object (singleton)
-            // Register(this) -> register as listener
-            // Have explicit setter methods for things we can set for the video player
-            // call like: state.SetPlayerFov(this, value)
-            // Then the state will invoke all listeners except the caller (this) and will also deliver the sender
-            // info with it. This will give us explicit control and everything will be handled via the state object.
-            vm.PropertyChanged += OnViewModelPropertyChanged;
+            //vm.PropertyChanged += OnViewModelPropertyChanged;
+            SetEventListeners();
 
             if (vm.VideoUri != null)
             {
@@ -102,42 +98,79 @@ public partial class VideoPlayerView : UserControl, IDisposable
         }
     }
 
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void SetEventListeners()
     {
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerFov))
-        {
-            var mp = Player.MediaPlayer;
-            var value = ViewModel.VideoPlayerFov;
-            mp?.UpdateViewpoint(mp.Viewpoint.Yaw, mp.Viewpoint.Pitch, mp.Viewpoint.Roll, value);
-        }
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerRoll))
-        {
-            var mp = Player.MediaPlayer;
-            var value = ViewModel.VideoPlayerRoll;
-            mp?.UpdateViewpoint(mp.Viewpoint.Yaw, mp.Viewpoint.Pitch, value, mp.Viewpoint.Fov);
-        }
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerPitch))
-        {
-            var mp = Player.MediaPlayer;
-            var value = ViewModel.VideoPlayerPitch;
-            mp?.UpdateViewpoint(mp.Viewpoint.Yaw, value, mp.Viewpoint.Roll, mp.Viewpoint.Fov);
-        }
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerYaw))
-        {
-            var mp = Player.MediaPlayer;
-            var value = ViewModel.VideoPlayerYaw;
-            mp?.UpdateViewpoint(value, mp.Viewpoint.Pitch, mp.Viewpoint.Roll, mp.Viewpoint.Fov);
-        }
-        if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineStartTime))
-        {
-            CalculateAndSetCropMarkerPositions(ViewModel.CropTimelineStartTime, ViewModel.CropTimelineEndTime);
-        }
-        if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineEndTime))
-        {
-            CalculateAndSetCropMarkerPositions(ViewModel.CropTimelineStartTime, ViewModel.CropTimelineEndTime);
-        }
+        var playerState = ViewModel.PlayerState;
+        
+        // As context changes, ensure we're adding ourselves as listener but not adding multiple times.
+        playerState.ViewPointFovChanged -= PlayerStateOnViewPointFovChanged;
+        playerState.ViewPointPitchChanged -= PlayerStateOnViewPointPitchChanged;
+        playerState.ViewPointRollChanged -= PlayerStateOnViewPointRollChanged;
+        playerState.ViewPointYawChanged -= PlayerStateOnViewPointYawChanged;
+        playerState.TimelineCropEndPositionChanged -= PlayerStateOnTimelineCropEndPositionChanged;
+        playerState.TimelineCropStartPositionChanged -= PlayerStateOnTimelineCropStartPositionChanged;
+        
+        playerState.ViewPointFovChanged += PlayerStateOnViewPointFovChanged;
+        playerState.ViewPointPitchChanged += PlayerStateOnViewPointPitchChanged;
+        playerState.ViewPointRollChanged += PlayerStateOnViewPointRollChanged;
+        playerState.ViewPointYawChanged += PlayerStateOnViewPointYawChanged;
+        playerState.TimelineCropEndPositionChanged += PlayerStateOnTimelineCropEndPositionChanged;
+        playerState.TimelineCropStartPositionChanged += PlayerStateOnTimelineCropStartPositionChanged;
     }
 
+    private void PlayerStateOnTimelineCropStartPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
+    {
+        if (ReferenceEquals(e.Setter, this))
+            return;
+
+        var playerState = sender as PreviewVideoPlayerState;
+        CalculateAndSetCropMarkerPositions(e.Value, playerState!.TimelineCropEndPosition);
+    }
+
+    private void PlayerStateOnTimelineCropEndPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
+    {
+        if (ReferenceEquals(e.Setter, this))
+            return;
+        
+        var playerState = sender as PreviewVideoPlayerState;
+        CalculateAndSetCropMarkerPositions(playerState!.TimelineCropStartPosition, e.Value);
+    }
+
+    private void PlayerStateOnViewPointYawChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (ReferenceEquals(e.Setter, this))
+            return;
+        
+        var vp = Player.MediaPlayer!.Viewpoint;
+        Player.MediaPlayer.UpdateViewpoint(e.Value, vp.Pitch, vp.Roll, _fov);
+    }
+
+    private void PlayerStateOnViewPointPitchChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (ReferenceEquals(e.Setter, this))
+            return;
+        
+        var vp = Player.MediaPlayer!.Viewpoint;
+        Player.MediaPlayer.UpdateViewpoint(vp.Yaw, e.Value, vp.Roll, _fov);
+    }
+    
+    private void PlayerStateOnViewPointRollChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (ReferenceEquals(e.Setter, this))
+            return;
+        
+        var vp = Player.MediaPlayer!.Viewpoint;
+        Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, e.Value, _fov);
+    }
+
+    private void PlayerStateOnViewPointFovChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (ReferenceEquals(e.Setter, this))
+            return;
+        
+        var vp = Player.MediaPlayer!.Viewpoint;
+        Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll, e.Value);
+    }
 
     private void VideoViewOnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -160,10 +193,6 @@ public partial class VideoPlayerView : UserControl, IDisposable
             _isFoving = true;
         }
 
-        var isDragging = _isPanning || _isRolling || _isFoving;
-        if (ViewModel != null)
-            ViewModel.IsDragging = isDragging;
-
         _previousMousePosition = e.GetCurrentPoint(this).Position;
     }
 
@@ -172,8 +201,6 @@ public partial class VideoPlayerView : UserControl, IDisposable
         _isPanning = false;
         _isRolling = false;
         _isFoving = false;
-        if (ViewModel != null)
-            ViewModel.IsDragging = false;
     }
 
     private void ControlsPanel_OnPointerMoved(object? sender, PointerEventArgs e)
@@ -183,6 +210,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
         if (ViewModel == null)
             return;
         
+        var playerState = ViewModel.PlayerState;
+            
         var currentPosition = e.GetCurrentPoint(this).Position;
         var movement = currentPosition - _previousMousePosition;
         _previousMousePosition = currentPosition;
@@ -196,10 +225,10 @@ public partial class VideoPlayerView : UserControl, IDisposable
             float yaw = (float)(_fov * -movement.X / range);
             float pitch = (float)(_fov * -movement.Y / range);
 
-            // var vp = Player.MediaPlayer.Viewpoint;
-            // Player.MediaPlayer.UpdateViewpoint(vp.Yaw + yaw, vp.Pitch + pitch, vp.Roll, _fov);
-            ViewModel.VideoPlayerYaw += yaw;
-            ViewModel.VideoPlayerPitch += pitch;
+            var vp = Player.MediaPlayer.Viewpoint;
+            playerState.SetViewPointYaw(vp.Yaw + yaw, this);
+            playerState.SetViewPointPitch(vp.Pitch + pitch, this);
+            Player.MediaPlayer.UpdateViewpoint(vp.Yaw + yaw, vp.Pitch + pitch, vp.Roll, _fov);
         }
 
         // Right mouse button down: roll
@@ -208,21 +237,20 @@ public partial class VideoPlayerView : UserControl, IDisposable
             _fov = Player.MediaPlayer.Viewpoint.Fov;
             float roll = (float)(_fov * -movement.X / range);
             
-            //var vp = Player.MediaPlayer.Viewpoint;
-            //Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll + roll, _fov);
-            //ViewModel.VideoPlayerRoll = vp.Roll + roll;
-            ViewModel.VideoPlayerRoll += roll;
+            var vp = Player.MediaPlayer.Viewpoint;
+            playerState.SetViewPointRoll(vp.Roll + roll, this);
+            Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll + roll, _fov);
         }
 
+        // Middle mouse button down: fov
         if (_isFoving)
         {
             _fov = Player.MediaPlayer.Viewpoint.Fov;
             _fov = Math.Min(Math.Max(5, _fov + (float)(_fov * -movement.X / range)), 180);
             
-            //var vp = Player.MediaPlayer.Viewpoint;
-            //Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll, _fov);
-            //ViewModel.VideoPlayerFov = _fov;
-            ViewModel.VideoPlayerFov = _fov;
+            var vp = Player.MediaPlayer.Viewpoint;
+            playerState.SetViewPointFov(_fov, this);
+            Player.MediaPlayer.UpdateViewpoint(vp.Yaw, vp.Pitch, vp.Roll, _fov);
         }
     }
 
@@ -263,13 +291,17 @@ public partial class VideoPlayerView : UserControl, IDisposable
         if (Player?.MediaPlayer == null)
             return;
 
+        if (ViewModel == null)
+            return;
+
         _fov = _defaultFov;
-        //Player.MediaPlayer.UpdateViewpoint(0, 0, 0, _fov);
+        Player.MediaPlayer.UpdateViewpoint(0, 0, 0, _fov);
         
-        ViewModel.VideoPlayerFov = _defaultFov;
-        ViewModel.VideoPlayerRoll = 0;
-        ViewModel.VideoPlayerYaw = 0;
-        ViewModel.VideoPlayerPitch = 0;
+        var playerState = ViewModel.PlayerState;
+        playerState.SetViewPointYaw(0, this);
+        playerState.SetViewPointPitch(0, this);
+        playerState.SetViewPointRoll(0, this);
+        playerState.SetViewPointFov(_fov, this);
     }
     
     private void Scrubber_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
@@ -285,18 +317,24 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void CropTimelineStartButtonClick(object? sender, RoutedEventArgs e)
     {
+        if (ViewModel == null)
+            return;
+        
         var timePositionMs = Math.Round((decimal)Scrubber.Value, 3);
-        ViewModel.CropTimelineStartTime = timePositionMs;
-        if (ViewModel.CropTimelineEndTime < timePositionMs)
-            ViewModel.CropTimelineEndTime = timePositionMs;
+        var playerState = ViewModel.PlayerState;
+        CalculateAndSetCropMarkerPositions(timePositionMs, playerState.TimelineCropEndPosition);
+        playerState.SetTimelineCropStartPosition(timePositionMs, this);
     }
 
     private void CropTimelineEndButtonClick(object? sender, RoutedEventArgs e)
     {
+        if (ViewModel == null)
+            return;
+        
         var timePositionMs = Math.Round((decimal)Scrubber.Value, 3);
-        ViewModel.CropTimelineEndTime = timePositionMs;
-        if (ViewModel.CropTimelineStartTime > timePositionMs)
-            ViewModel.CropTimelineStartTime = timePositionMs;
+        var playerState = ViewModel.PlayerState;
+        CalculateAndSetCropMarkerPositions(playerState.TimelineCropStartPosition, timePositionMs);
+        playerState.SetTimelineCropEndPosition(timePositionMs, this);
     }
     
     private void ResetCropMarkerPositions()
@@ -309,19 +347,11 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void CalculateAndSetCropMarkerPositions(decimal cropStart, decimal cropEnd)
     {
-        // if (videoModel?.TimelineCrop == null)
-        // {
-        //     ResetCropMarkerPositions();
-        //     return;
-        // }
-
         var timeLineLength = ViewModel?.SourceConvertibleVideo?.MediaInfo.DurationInSeconds ?? 1;
-
         var startMarkerPos = (double)cropStart / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
         var endMarkerPos = (double)cropEnd / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
 
         Canvas.SetLeft(CropStartMarker, startMarkerPos);
         Canvas.SetLeft(CropEndMarker, endMarkerPos - CropEndMarker.Bounds.Width);
-        
     }
 }

@@ -222,13 +222,13 @@
             <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" RowDefinitions="*" Classes="orientation-controls-grid">
               <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Start time (s)</TextBlock>
               <NumericUpDown Name="TimelineCropStartTimeBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
-                Minimum="0" Maximum="{Binding MaximumCropTimelineTime}" 
-                Value="{Binding CropTimelineStartTime}"
+                Minimum="0" Maximum="{Binding TimelineCropEndTime}" 
+                Value="{Binding TimelineCropStartTime}"
                 Width="100"></NumericUpDown>
               <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center">End time (s)</TextBlock>
               <NumericUpDown Name="TimelineCropEndTimeBox" Grid.Row="0" Grid.Column="3" VerticalAlignment="Center"
-                Minimum="0" Maximum="{Binding MaximumCropTimelineTime}" 
-                Value="{Binding CropTimelineEndTime}"
+                Minimum="{Binding TimelineCropStartTime}" Maximum="{Binding MaximumCropTimelineTime}" 
+                Value="{Binding TimelineCropEndTime}"
                 Width="100"></NumericUpDown>
               <Button Grid.Row="0" Grid.Column="4" CornerRadius="3" Width="22" Height="22" Margin="8 0 0 0"
                 ToolTip.Tip="Remove timeline crop" Command="{Binding ResetVideoTimelineCropCommand}">

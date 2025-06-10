@@ -50,7 +50,8 @@ public class MediaPreviewService : IMediaPreviewService
         var threadWorkItem = new ThreadWorkItem<(IMediaInfo, long), TaskCompletionSource<byte[]?>>
         {
             WorkItem = (media, timePositionMilliseconds),
-            Result = new TaskCompletionSource<byte[]?>()
+            Result = new TaskCompletionSource<byte[]?>(),
+            CancellationToken = CancellationToken.None
         };
         _thumbnailGenerationQueue.Enqueue(threadWorkItem);
         // Run immediately.

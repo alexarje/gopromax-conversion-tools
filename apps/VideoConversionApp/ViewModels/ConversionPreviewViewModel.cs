@@ -19,6 +19,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     private readonly IMediaPreviewService _mediaPreviewService;
     private readonly IAppSettingsService _appSettingsService;
     private readonly IConversionManager _conversionManager;
+    private readonly PreviewVideoPlayerState _previewVideoPlayerState;
 
     public IList<IImage> SnapshotFrameImages { get; set; } = [];
 
@@ -32,45 +33,12 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     public partial double KeyFrameVideoRenderProgress { get; set; }
     [ObservableProperty]
     public partial bool BlurImageVisible { get; set; }
-
     [ObservableProperty]
-    public partial decimal MaximumCropTimelineTime { get; set; }
-
-    public decimal CropTimelineStartTime
-    {
-        get => field;
-        set
-        {
-            if (value == field)
-                return;
-            
-            if (value > CropTimelineEndTime)
-                value = CropTimelineEndTime;
-            
-            SetProperty(ref field, value);
-            VideoModel.TimelineCrop = VideoModel.TimelineCrop with { StartTimeSeconds = value };
-            //VideoModel.NotifyConversionSettingsChanged();
-            //KeyFrameVideoPlayerViewModel.AssociatedView.CalculateAndSetCropMarkerPositions(VideoModel);
-        }
-    }
-    
-    public decimal CropTimelineEndTime
-    {
-        get => field;
-        set
-        {
-            if (value == field)
-                return;
-            
-            if (value < CropTimelineStartTime)
-                value = CropTimelineStartTime;
-            
-            SetProperty(ref field, value);
-            VideoModel.TimelineCrop = VideoModel.TimelineCrop with { EndTimeSeconds = value };
-            //VideoModel.NotifyConversionSettingsChanged();
-            //KeyFrameVideoPlayerViewModel.AssociatedView.CalculateAndSetCropMarkerPositions(VideoModel);
-        }
-    }
+    public partial decimal MaximumCropTimelineTime { get; private set; }
+    [ObservableProperty]
+    public partial decimal TimelineCropStartTime { get; set; }
+    [ObservableProperty]
+    public partial decimal TimelineCropEndTime { get; set; }
     
     [ObservableProperty]
     public partial VideoPlayerViewModel KeyFrameVideoPlayerViewModel { get; set; }
@@ -133,95 +101,129 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     }
     
     // For KeyFrameVideo Preview
+    [ObservableProperty]
+    public partial int PreviewYawValue { get; set; }
+    [ObservableProperty]
+    public partial int PreviewPitchValue { get; set; }
+    [ObservableProperty]
+    public partial int PreviewRollValue { get; set; }
+    [ObservableProperty]
+    public partial int PreviewFovValue { get; set; }
     
-    public int PreviewYawValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            
-            if (value == field)
-                return;
-            
-            SetProperty(ref field, value);
-            if (!KeyFrameVideoPlayerViewModel.IsDragging)
-                KeyFrameVideoPlayerViewModel.VideoPlayerYaw = value;
-        }
-    }
-    
-    public int PreviewPitchValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            
-            if (value == field)
-                return;
-            
-            SetProperty(ref field, value);
-            if (!KeyFrameVideoPlayerViewModel.IsDragging)
-                KeyFrameVideoPlayerViewModel.VideoPlayerPitch = value;
-        }
-    }
-    
-    public int PreviewRollValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            
-            if (value == field)
-                return;
-            
-            SetProperty(ref field, value);
-            if (!KeyFrameVideoPlayerViewModel.IsDragging)
-                KeyFrameVideoPlayerViewModel.VideoPlayerRoll = value;
-        }
-    }
-    
-    public int PreviewFovValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            
-            if (value == field)
-                return;
-            
-            SetProperty(ref field, value);
-            if (!KeyFrameVideoPlayerViewModel.IsDragging)
-                KeyFrameVideoPlayerViewModel.VideoPlayerFov = value;
-            
-            // if (KeyFrameVideoPlayerViewModel.AssociatedView.IsFoving)
-            //     return;
-            // var mp = KeyFrameVideoPlayerViewModel.AssociatedView.Player.MediaPlayer;
-            // mp?.UpdateViewpoint(mp.Viewpoint.Yaw, mp.Viewpoint.Pitch, mp.Viewpoint.Roll, value);
-        }
-    }
-
     private CancellationTokenSource? _snapshotGenerationCts;
-    
     private CancellationTokenSource? _snapshotLiveUpdateCts;
     
     public ConversionPreviewViewModel(
         IMediaPreviewService mediaPreviewService,
         IAppSettingsService appSettingsService,
-        IConversionManager conversionManager)
+        IConversionManager conversionManager,
+        PreviewVideoPlayerState previewVideoPlayerState)
     {
         _mediaPreviewService = mediaPreviewService;
         _appSettingsService = appSettingsService;
         _conversionManager = conversionManager;
-        _conversionManager.PreviewedVideoChanged += ConversionManagerOnPreviewedVideoChanged;
-        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(null, null);
+        _previewVideoPlayerState = previewVideoPlayerState;
+        SetEventListeners();
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, null, null);
     }
+
+    private void SetEventListeners()
+    {
+        if (_previewVideoPlayerState == null)
+            return;
+        
+        _previewVideoPlayerState.ViewPointFovChanged += PreviewVideoPlayerStateOnViewPointFovChanged;
+        _previewVideoPlayerState.ViewPointPitchChanged += PreviewVideoPlayerStateOnViewPointPitchChanged;
+        _previewVideoPlayerState.ViewPointRollChanged += PreviewVideoPlayerStateOnViewPointRollChanged;
+        _previewVideoPlayerState.ViewPointYawChanged += PreviewVideoPlayerStateOnViewPointYawChanged;
+        
+        _previewVideoPlayerState.TimelineCropStartPositionChanged += PreviewVideoPlayerStateOnTimelineCropStartPositionChanged;
+        _previewVideoPlayerState.TimelineCropEndPositionChanged += PreviewVideoPlayerStateOnTimelineCropEndPositionChanged;
+        
+        _conversionManager.PreviewedVideoChanged += ConversionManagerOnPreviewedVideoChanged;
+    }
+
+    private void PreviewVideoPlayerStateOnTimelineCropEndPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
+    {
+        if (e.Setter == this)
+            return;
+       
+        TimelineCropEndTime = e.Value;
+    }
+
+    partial void OnTimelineCropEndTimeChanged(decimal value)
+    {
+        if (value < TimelineCropStartTime)
+            value = TimelineCropStartTime;
+        
+        VideoModel.TimelineCrop = VideoModel.TimelineCrop with { EndTimeSeconds = value };
+        _previewVideoPlayerState.SetTimelineCropEndPosition(value, this);
+    }
+
+    private void PreviewVideoPlayerStateOnTimelineCropStartPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
+    {
+        if (e.Setter == this) 
+            return;
+        
+        TimelineCropStartTime = e.Value;
+    }
+
+    partial void OnTimelineCropStartTimeChanged(decimal value)
+    {
+        if (value > TimelineCropEndTime)
+            value = TimelineCropEndTime;
+        
+        VideoModel.TimelineCrop = VideoModel.TimelineCrop with { StartTimeSeconds = value };
+        _previewVideoPlayerState.SetTimelineCropStartPosition(value, this);
+    }
+    
+    
+
+    private void PreviewVideoPlayerStateOnViewPointYawChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (e.Setter != this)
+            PreviewYawValue = (int)e.Value;
+    }
+
+    partial void OnPreviewYawValueChanged(int value)
+    {
+        _previewVideoPlayerState.SetViewPointYaw(value, this);
+    }
+
+    private void PreviewVideoPlayerStateOnViewPointRollChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (e.Setter != this)
+            PreviewRollValue = (int)e.Value;
+    }
+
+    partial void OnPreviewRollValueChanged(int value)
+    {
+        _previewVideoPlayerState.SetViewPointRoll(value, this);
+    }
+
+    private void PreviewVideoPlayerStateOnViewPointPitchChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (e.Setter != this)
+            PreviewPitchValue = (int)e.Value;
+    }
+
+    partial void OnPreviewPitchValueChanged(int value)
+    {
+        _previewVideoPlayerState.SetViewPointPitch(value, this);
+    }
+
+    private void PreviewVideoPlayerStateOnViewPointFovChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
+    {
+        if (e.Setter != this)
+            PreviewFovValue = (int)e.Value;
+    }
+    
+    partial void OnPreviewFovValueChanged(int value)
+    {
+        _previewVideoPlayerState.SetViewPointFov(value, this);
+    }
+    
+    
 
     private void ConversionManagerOnPreviewedVideoChanged(object? sender, IConvertibleVideoModel? video)
     {
@@ -250,7 +252,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         
         BlurImageVisible = true;
         VideoModel = video;
-        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(video, null);
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, video, null);
         
         if (video == null && initialPreviewImage == null)
             return;
@@ -263,7 +265,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         if (video == null)
             return;
 
-        video.TimelineCropUpdated += OnVideoTimelineCropUpdated;
+        //video.TimelineCropUpdated += OnVideoTimelineCropUpdated;
         
         var prevAutoRenderSetting = AutoRenderOnChanges;
         AutoRenderOnChanges = false;
@@ -273,8 +275,8 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         AutoRenderOnChanges = prevAutoRenderSetting;
 
         MaximumCropTimelineTime = video.MediaInfo.DurationInSeconds;
-        CropTimelineStartTime = video.TimelineCrop.StartTimeSeconds ?? 0;
-        CropTimelineEndTime = video.TimelineCrop.EndTimeSeconds ?? video.MediaInfo.DurationInSeconds;
+        TimelineCropStartTime = video.TimelineCrop.StartTimeSeconds ?? 0;
+        TimelineCropEndTime = video.TimelineCrop.EndTimeSeconds ?? video.MediaInfo.DurationInSeconds;
 
         ResetPreviewFov();
         ResetPreviewPitch();
@@ -285,12 +287,12 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         NextFrame();
     }
 
-    private void OnVideoTimelineCropUpdated(object? sender, TimelineCrop e)
-    {
-        var video = sender as IConvertibleVideoModel;
-        CropTimelineStartTime = e.StartTimeSeconds ?? 0;
-        CropTimelineEndTime = e.EndTimeSeconds ?? video!.MediaInfo.DurationInSeconds;
-    }
+    // private void OnVideoTimelineCropUpdated(object? sender, TimelineCrop e)
+    // {
+    //     var video = sender as IConvertibleVideoModel;
+    //     CropTimelineStartTime = e.StartTimeSeconds ?? 0;
+    //     CropTimelineEndTime = e.EndTimeSeconds ?? video!.MediaInfo.DurationInSeconds;
+    // }
 
     [RelayCommand]
     public void NextFrame()
@@ -424,8 +426,8 @@ public partial class ConversionPreviewViewModel : ViewModelBase
             return;
 
         VideoModel.TimelineCrop = new TimelineCrop();
-        CropTimelineStartTime = 0;
-        CropTimelineEndTime = VideoModel.MediaInfo.DurationInSeconds;
+        TimelineCropStartTime = 0;
+        TimelineCropEndTime = VideoModel.MediaInfo.DurationInSeconds;
        
     }
 
@@ -454,14 +456,8 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         {
             var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(VideoModel,
                 (progress) => KeyFrameVideoRenderProgress = progress, CancellationToken.None);
-
-            // Set the UserControl's bound ViewModel. Listen to its PropertyChanged events to sync the yaw/pitch/roll/fov
-            // from there to our properties.
-            if (KeyFrameVideoPlayerViewModel != null)
-                KeyFrameVideoPlayerViewModel.PropertyChanged -= OnVideoPlayerViewModelPropertyChanged;
             
-            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(VideoModel, keyFrameVideo);
-            KeyFrameVideoPlayerViewModel.PropertyChanged += OnVideoPlayerViewModelPropertyChanged;
+            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, VideoModel, keyFrameVideo);
         }
         catch (Exception e)
         {
@@ -469,25 +465,25 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         }
         
     }
-
-    private void OnVideoPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerYaw)) 
-            PreviewYawValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerYaw;
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerPitch)) 
-            PreviewPitchValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerPitch;
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerRoll)) 
-            PreviewRollValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerRoll;
-        if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerFov))
-            PreviewFovValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerFov;
-        
-        // Yeah, there will be some double updates going on, and this whole mess of a video control must be
-        // implemented better at some point...
-        // if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineStartTime))
-        //     CropTimelineStartTime = KeyFrameVideoPlayerViewModel.CropTimelineStartTime;
-        // if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineEndTime))
-        //     CropTimelineEndTime = KeyFrameVideoPlayerViewModel.CropTimelineEndTime;
-        
-        
-    }
+    //
+    // private void OnVideoPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    // {
+    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerYaw)) 
+    //         PreviewYawValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerYaw;
+    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerPitch)) 
+    //         PreviewPitchValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerPitch;
+    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerRoll)) 
+    //         PreviewRollValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerRoll;
+    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerFov))
+    //         PreviewFovValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerFov;
+    //     
+    //     // Yeah, there will be some double updates going on, and this whole mess of a video control must be
+    //     // implemented better at some point...
+    //     // if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineStartTime))
+    //     //     CropTimelineStartTime = KeyFrameVideoPlayerViewModel.CropTimelineStartTime;
+    //     // if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineEndTime))
+    //     //     CropTimelineEndTime = KeyFrameVideoPlayerViewModel.CropTimelineEndTime;
+    //     
+    //     
+    // }
 }
