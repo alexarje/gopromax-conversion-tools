@@ -9,10 +9,7 @@ namespace VideoConversionApp.Abstractions;
 /// </summary>
 public interface IConversionManager
 {
-    public event EventHandler<IConvertibleVideoModel?> PreviewedVideoChanged;
-    
-    IConvertibleVideoModel AddVideoToPool(IMediaInfo mediaInfo);
-    void RemoveVideoFromPool(IConvertibleVideoModel video);
-    void SetPreviewedVideo(IConvertibleVideoModel? video);
-    IConvertibleVideoModel? GetPreviewedVideo();
+    IConvertableVideo GetPlaceholderVideo();
+    IConvertableVideo AddVideoToPool(IMediaInfo mediaInfo);
+    void RemoveVideoFromPool(IConvertableVideo video);
 }

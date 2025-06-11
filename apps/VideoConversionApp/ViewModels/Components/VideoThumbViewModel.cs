@@ -37,7 +37,7 @@ public partial class VideoThumbViewModel : ViewModelBase
     /// <summary>
     /// The linked data model.
     /// </summary>
-    public IConvertibleVideoModel? LinkedVideo { get; set; }
+    public IConvertableVideo? LinkedVideo { get; set; }
 
     private static readonly Bitmap DefaultThumbnail = new (AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/videostrip.png")));
     

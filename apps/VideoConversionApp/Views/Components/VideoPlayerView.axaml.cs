@@ -13,6 +13,12 @@ using VideoConversionApp.ViewModels.Components;
 
 namespace VideoConversionApp.Views.Components;
 
+/// <summary>
+/// The video player, with play/pause controls and crop markers.
+/// Has a lot of going on, because of ViewModel binding issues and because there are
+/// also controls outside the player view that can control it - so the player is
+/// also controlled using the PreviewVideoPlayerState object's events.
+/// </summary>
 public partial class VideoPlayerView : UserControl, IDisposable
 {
 
@@ -24,10 +30,9 @@ public partial class VideoPlayerView : UserControl, IDisposable
     private float _fov = 80;
     private readonly float _defaultFov = 80;
     
-    private readonly LibVLC _libVlc = new LibVLC(enableDebugLogs: true);
+    private readonly LibVLC _libVlc = new ();
     private readonly MediaPlayer _mediaPlayer;
 
-    private VideoPlayerViewModel? _previousDataContext;
     private VideoPlayerViewModel? ViewModel => DataContext as VideoPlayerViewModel;
     
     public VideoPlayerView()
@@ -46,6 +51,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         Player.SizeChanged += PlayerOnSizeChanged;
     }
 
+    // Move crop markers to according to player width.
     private void PlayerOnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (ViewModel == null)
@@ -55,6 +61,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         CalculateAndSetCropMarkerPositions(playerState.TimelineCropStartPosition, playerState.TimelineCropEndPosition);
     }
 
+    // Keep the scrubber synced to video player.
     private void MediaPlayerOnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
     {
         Dispatcher.UIThread.Invoke(() =>
@@ -63,6 +70,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         });
     }
 
+    // Workaround for the player.
     private void PlayerOnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
         var attachMethod = Player.GetType().GetMethod("Attach", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -76,7 +84,6 @@ public partial class VideoPlayerView : UserControl, IDisposable
             if(_mediaPlayer.Media != null)
                 _mediaPlayer.Media.Dispose();
 
-            //vm.PropertyChanged += OnViewModelPropertyChanged;
             SetEventListeners();
 
             if (vm.VideoUri != null)
@@ -98,8 +105,12 @@ public partial class VideoPlayerView : UserControl, IDisposable
         }
     }
 
+    // Update the video player viewport and markers when they're updated from outside.
     private void SetEventListeners()
     {
+        if (ViewModel == null)
+            return;
+        
         var playerState = ViewModel.PlayerState;
         
         // As context changes, ensure we're adding ourselves as listener but not adding multiple times.
@@ -120,7 +131,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void PlayerStateOnTimelineCropStartPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
     {
-        if (ReferenceEquals(e.Setter, this))
+        if (ReferenceEquals(e.Context, this))
             return;
 
         var playerState = sender as PreviewVideoPlayerState;
@@ -129,7 +140,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void PlayerStateOnTimelineCropEndPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
     {
-        if (ReferenceEquals(e.Setter, this))
+        if (ReferenceEquals(e.Context, this))
             return;
         
         var playerState = sender as PreviewVideoPlayerState;
@@ -138,7 +149,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void PlayerStateOnViewPointYawChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (ReferenceEquals(e.Setter, this))
+        if (ReferenceEquals(e.Context, this))
             return;
         
         var vp = Player.MediaPlayer!.Viewpoint;
@@ -147,7 +158,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void PlayerStateOnViewPointPitchChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (ReferenceEquals(e.Setter, this))
+        if (ReferenceEquals(e.Context, this))
             return;
         
         var vp = Player.MediaPlayer!.Viewpoint;
@@ -156,7 +167,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     
     private void PlayerStateOnViewPointRollChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (ReferenceEquals(e.Setter, this))
+        if (ReferenceEquals(e.Context, this))
             return;
         
         var vp = Player.MediaPlayer!.Viewpoint;
@@ -165,7 +176,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
 
     private void PlayerStateOnViewPointFovChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (ReferenceEquals(e.Setter, this))
+        if (ReferenceEquals(e.Context, this))
             return;
         
         var vp = Player.MediaPlayer!.Viewpoint;
@@ -337,17 +348,9 @@ public partial class VideoPlayerView : UserControl, IDisposable
         playerState.SetTimelineCropEndPosition(timePositionMs, this);
     }
     
-    private void ResetCropMarkerPositions()
-    {
-        var startMarkerPos = 0;
-        var endMarkerPos = CropTimelineCanvas.Bounds.Width - CropEndMarker.Bounds.Width;
-        Canvas.SetLeft(CropStartMarker, startMarkerPos);
-        Canvas.SetLeft(CropEndMarker, endMarkerPos);
-    }
-
     private void CalculateAndSetCropMarkerPositions(decimal cropStart, decimal cropEnd)
     {
-        var timeLineLength = ViewModel?.SourceConvertibleVideo?.MediaInfo.DurationInSeconds ?? 1;
+        var timeLineLength = ViewModel?.SourceVideo?.MediaInfo.DurationInSeconds ?? 1;
         var startMarkerPos = (double)cropStart / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
         var endMarkerPos = (double)cropEnd / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
 

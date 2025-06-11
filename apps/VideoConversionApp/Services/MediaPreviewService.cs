@@ -7,6 +7,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Platform;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
@@ -31,7 +32,7 @@ public class MediaPreviewService : IMediaPreviewService
     private IAppSettingsService _appSettingsService;
     private readonly IAvFilterFactory _avFilterFactory;
     private List<Thread> _thumbnailQueueProcessingThreads = new();
-    private ConcurrentDictionary<IMediaInfo, byte[]> _thumbnailCache = new();
+    private ConcurrentDictionary<string, byte[]> _thumbnailCache = new();
 
     private ConcurrentQueue<ThreadWorkItem<(IMediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> 
         _thumbnailGenerationQueue = new();
@@ -42,8 +43,17 @@ public class MediaPreviewService : IMediaPreviewService
     {
         _appSettingsService = appSettingsService;
         _avFilterFactory = avFilterFactory;
+
+        CachePlaceholderThumbnail();
     }
 
+    private void CachePlaceholderThumbnail()
+    {
+        using var defaultThumb = AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/placeholder_snapframe.png"));
+        var buffer = new byte[defaultThumb.Length];
+        defaultThumb.ReadExactly(buffer, 0, buffer.Length);
+        _thumbnailCache.TryAdd(":placeholder:", buffer);
+    }
     
     public Task<byte[]?> QueueThumbnailGenerationAsync(IMediaInfo media, long timePositionMilliseconds)
     {
@@ -132,7 +142,7 @@ public class MediaPreviewService : IMediaPreviewService
                 if (process.ExitCode == 0 && File.Exists(tmpThumbFilePath))
                 {
                     var imgBytes = File.ReadAllBytes(tmpThumbFilePath);
-                    _thumbnailCache.AddOrUpdate(mediaInfo, imgBytes, (_, _) => imgBytes);
+                    _thumbnailCache.AddOrUpdate(mediaInfo.Filename, imgBytes, (_, _) => imgBytes);
                     File.Delete(tmpThumbFilePath);
                     threadWorkItem.Result.TrySetResult(imgBytes);
                 }
@@ -258,7 +268,7 @@ public class MediaPreviewService : IMediaPreviewService
         
     }
 
-    public async Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(IConvertibleVideoModel video,
+    public async Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(IConvertableVideo video,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
@@ -390,6 +400,11 @@ public class MediaPreviewService : IMediaPreviewService
 
     public byte[]? GetCachedThumbnail(IMediaInfo media)
     {
-        return _thumbnailCache.GetValueOrDefault(media);
+        return _thumbnailCache.GetValueOrDefault(media.Filename);
+    }
+
+    public byte[]? GetCachedThumbnail(string videoFilename)
+    {
+        return _thumbnailCache.GetValueOrDefault(videoFilename);
     }
 }

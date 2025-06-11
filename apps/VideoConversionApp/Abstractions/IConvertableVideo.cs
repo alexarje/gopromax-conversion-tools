@@ -3,7 +3,7 @@ using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Abstractions;
 
-public interface IConvertibleVideoModel
+public interface IConvertableVideo
 {
     public IMediaInfo MediaInfo { get; }
     public AvFilterFrameRotation FrameRotation { get; set; }

@@ -3,11 +3,15 @@ using System;
 
 namespace VideoConversionApp.Models;
 
+/// <summary>
+/// A state object for keeping tabs on the video player state and to have better control
+/// over the event handling.
+/// </summary>
 public class PreviewVideoPlayerState
 {
     public class StateEventArgs<T>
     {
-        public object? Setter { get; init; }
+        public object? Context { get; init; }
         public T Value { get; init; }
     }
     
@@ -32,64 +36,64 @@ public class PreviewVideoPlayerState
     {
     }
     
-    public void SetViewPointYaw(float value, object setter, bool raiseEvent = true)
+    public void SetViewPointYaw(float value, object context, bool raiseEvent = true)
     {
         if (ViewPointYaw == value) 
             return;
         
         ViewPointYaw = value;
         if (raiseEvent)
-            ViewPointYawChanged?.Invoke(this, new StateEventArgs<float>() { Setter = setter, Value = value });
+            ViewPointYawChanged?.Invoke(this, new StateEventArgs<float>() { Context = context, Value = value });
     }
     
-    public void SetViewPointPitch(float value, object setter, bool raiseEvent = true)
+    public void SetViewPointPitch(float value, object context, bool raiseEvent = true)
     {
         if (ViewPointPitch == value) 
             return;
         
         ViewPointPitch = value;
         if (raiseEvent)
-            ViewPointPitchChanged?.Invoke(this, new StateEventArgs<float>() { Setter = setter, Value = value });
+            ViewPointPitchChanged?.Invoke(this, new StateEventArgs<float>() { Context = context, Value = value });
     }
     
-    public void SetViewPointRoll(float value, object setter, bool raiseEvent = true)
+    public void SetViewPointRoll(float value, object context, bool raiseEvent = true)
     {
         if (ViewPointRoll == value) 
             return;
         
         ViewPointRoll = value;
         if (raiseEvent)
-            ViewPointRollChanged?.Invoke(this, new StateEventArgs<float>() { Setter = setter, Value = value });
+            ViewPointRollChanged?.Invoke(this, new StateEventArgs<float>() { Context = context, Value = value });
     }
     
-    public void SetViewPointFov(float value, object setter, bool raiseEvent = true)
+    public void SetViewPointFov(float value, object context, bool raiseEvent = true)
     {
         if (ViewPointFov == value) 
             return;
         
         ViewPointFov = value;
         if (raiseEvent)
-            ViewPointFovChanged?.Invoke(this, new StateEventArgs<float>() { Setter = setter, Value = value });
+            ViewPointFovChanged?.Invoke(this, new StateEventArgs<float>() { Context = context, Value = value });
     }
     
-    public void SetTimelineCropStartPosition(decimal value, object setter, bool raiseEvent = true)
+    public void SetTimelineCropStartPosition(decimal value, object context, bool raiseEvent = true)
     {
         if (TimelineCropStartPosition == value) 
             return;
         
         TimelineCropStartPosition = value;
         if (raiseEvent)
-            TimelineCropStartPositionChanged?.Invoke(this, new StateEventArgs<decimal>() { Setter = setter, Value = value });
+            TimelineCropStartPositionChanged?.Invoke(this, new StateEventArgs<decimal>() { Context = context, Value = value });
     }
     
-    public void SetTimelineCropEndPosition(decimal value, object setter, bool raiseEvent = true)
+    public void SetTimelineCropEndPosition(decimal value, object context, bool raiseEvent = true)
     {
         if (TimelineCropEndPosition == value) 
             return;
         
         TimelineCropEndPosition = value;
         if (raiseEvent)
-            TimelineCropEndPositionChanged?.Invoke(this, new StateEventArgs<decimal>() { Setter = setter, Value = value });
+            TimelineCropEndPositionChanged?.Invoke(this, new StateEventArgs<decimal>() { Context = context, Value = value });
     }
 
 

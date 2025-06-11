@@ -22,7 +22,8 @@
     </Style>
   </UserControl.Styles>
 
-  <DockPanel IsEnabled="{Binding VideoModel, Converter={x:Static ObjectConverters.IsNotNull}}">
+  <!-- TODO Change IsEnabled to check for something else now that we use a placeholder -->
+  <DockPanel IsEnabled="{Binding Video, Converter={x:Static ObjectConverters.IsNotNull}}">
     <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>
         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"

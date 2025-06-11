@@ -40,7 +40,7 @@ public interface IMediaPreviewService
     /// <param name="progressCallback">Optional callback for receiving progress info</param>
     /// <param name="cancellationToken">Token for cancelling the process</param>
     /// <returns>Generated video information</returns>
-    Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(IConvertibleVideoModel video,
+    Task<KeyFrameVideo> GenerateKeyFrameVideoAsync(IConvertableVideo video,
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default);
 
@@ -50,4 +50,11 @@ public interface IMediaPreviewService
     /// <param name="media"></param>
     /// <returns>Null if the media doesn't have a thumbnail cached, otherwise the image bytes.</returns>
     byte[]? GetCachedThumbnail(IMediaInfo media);
+    
+    /// <summary>
+    /// Returns a cached thumbnail for the given media.
+    /// </summary>
+    /// <param name="videoFilename"></param>
+    /// <returns>Null if the media doesn't have a thumbnail cached, otherwise the image bytes.</returns>
+    byte[]? GetCachedThumbnail(string videoFilename);
 }

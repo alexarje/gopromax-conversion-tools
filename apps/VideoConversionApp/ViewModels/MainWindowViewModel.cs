@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Models;
 
 namespace VideoConversionApp.ViewModels;
 
@@ -27,10 +28,11 @@ public partial class MainWindowViewModel : ViewModelBase
         
         if (Design.IsDesignMode)
         {
+            ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!, null!, new PreviewVideoPlayerState());
             MediaSelectionViewModel = new MediaSelectionViewModel(null!, null!, 
-                null!, null!, null!);
-            ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!, null!, null!);
+                null!, null!, null!, ConversionPreviewViewModel);
             RenderSettingsViewModel = new RenderSettingsViewModel();
+            RenderQueueViewModel = new RenderQueueViewModel();
         }
     }
     

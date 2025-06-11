@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +23,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     public IList<IImage> SnapshotFrameImages { get; set; } = [];
 
     [ObservableProperty] 
-    public partial IConvertibleVideoModel VideoModel { get; set; } = null!;
+    public partial IConvertableVideo Video { get; private set; }
     [ObservableProperty]
     public partial IImage? CurrentSnapshotFrameImage { get; set; }
     [ObservableProperty]
@@ -42,63 +41,16 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     
     [ObservableProperty]
     public partial VideoPlayerViewModel KeyFrameVideoPlayerViewModel { get; set; }
-
-    public bool AutoRenderOnChanges
-    {
-        get => field;
-        set
-        {
-            SetProperty(ref field, value);
-            if (value)
-                _ = LiveUpdateSnapshot();
-        }
-    }
     
-    
-    public int TransformYawValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            SetProperty(ref field, value);
-            VideoModel.FrameRotation = VideoModel.FrameRotation with { Yaw = value };
-            if (AutoRenderOnChanges)
-                _ = LiveUpdateSnapshot();
-            //VideoModel.NotifyConversionSettingsChanged();
-        }
-    }
-    
-    public int TransformPitchValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            SetProperty(ref field, value);
-            VideoModel.FrameRotation = VideoModel.FrameRotation with { Pitch = value };
-            if (AutoRenderOnChanges)
-                _ = LiveUpdateSnapshot();
-            //VideoModel.NotifyConversionSettingsChanged();
-        }
-    }
-    
-    public int TransformRollValue
-    {
-        get => field;
-        set
-        {
-            if (VideoModel == null)
-                return;
-            SetProperty(ref field, value);
-            VideoModel.FrameRotation = VideoModel.FrameRotation with { Roll = value };
-            if (AutoRenderOnChanges)
-                _ = LiveUpdateSnapshot();
-            //VideoModel.NotifyConversionSettingsChanged();
-        }
-    }
+    // For editing the yaw/pitch/roll transforms
+    [ObservableProperty]
+    public partial bool AutoRenderOnChanges { get; set; }
+    [ObservableProperty]
+    public partial int TransformYawValue { get; set; }
+    [ObservableProperty]
+    public partial int TransformPitchValue { get; set; }
+    [ObservableProperty]
+    public partial int TransformRollValue { get; set; }
     
     // For KeyFrameVideo Preview
     [ObservableProperty]
@@ -123,29 +75,28 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         _appSettingsService = appSettingsService;
         _conversionManager = conversionManager;
         _previewVideoPlayerState = previewVideoPlayerState;
+        //Video = _conversionManager.GetPlaceholderVideo();
         SetEventListeners();
-        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, null, null);
+        
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, 
+            Video, null);
+        
+        _ = SetPreviewedVideo(Video);
     }
 
     private void SetEventListeners()
     {
-        if (_previewVideoPlayerState == null)
-            return;
-        
         _previewVideoPlayerState.ViewPointFovChanged += PreviewVideoPlayerStateOnViewPointFovChanged;
         _previewVideoPlayerState.ViewPointPitchChanged += PreviewVideoPlayerStateOnViewPointPitchChanged;
         _previewVideoPlayerState.ViewPointRollChanged += PreviewVideoPlayerStateOnViewPointRollChanged;
         _previewVideoPlayerState.ViewPointYawChanged += PreviewVideoPlayerStateOnViewPointYawChanged;
-        
         _previewVideoPlayerState.TimelineCropStartPositionChanged += PreviewVideoPlayerStateOnTimelineCropStartPositionChanged;
         _previewVideoPlayerState.TimelineCropEndPositionChanged += PreviewVideoPlayerStateOnTimelineCropEndPositionChanged;
-        
-        _conversionManager.PreviewedVideoChanged += ConversionManagerOnPreviewedVideoChanged;
     }
 
     private void PreviewVideoPlayerStateOnTimelineCropEndPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
     {
-        if (e.Setter == this)
+        if (e.Context == this)
             return;
        
         TimelineCropEndTime = e.Value;
@@ -156,13 +107,13 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         if (value < TimelineCropStartTime)
             value = TimelineCropStartTime;
         
-        VideoModel.TimelineCrop = VideoModel.TimelineCrop with { EndTimeSeconds = value };
+        Video.TimelineCrop = Video.TimelineCrop with { EndTimeSeconds = value };
         _previewVideoPlayerState.SetTimelineCropEndPosition(value, this);
     }
 
     private void PreviewVideoPlayerStateOnTimelineCropStartPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
     {
-        if (e.Setter == this) 
+        if (e.Context == this) 
             return;
         
         TimelineCropStartTime = e.Value;
@@ -173,15 +124,13 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         if (value > TimelineCropEndTime)
             value = TimelineCropEndTime;
         
-        VideoModel.TimelineCrop = VideoModel.TimelineCrop with { StartTimeSeconds = value };
+        Video.TimelineCrop = Video.TimelineCrop with { StartTimeSeconds = value };
         _previewVideoPlayerState.SetTimelineCropStartPosition(value, this);
     }
     
-    
-
     private void PreviewVideoPlayerStateOnViewPointYawChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (e.Setter != this)
+        if (e.Context != this)
             PreviewYawValue = (int)e.Value;
     }
 
@@ -192,7 +141,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
 
     private void PreviewVideoPlayerStateOnViewPointRollChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (e.Setter != this)
+        if (e.Context != this)
             PreviewRollValue = (int)e.Value;
     }
 
@@ -203,7 +152,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
 
     private void PreviewVideoPlayerStateOnViewPointPitchChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (e.Setter != this)
+        if (e.Context != this)
             PreviewPitchValue = (int)e.Value;
     }
 
@@ -214,7 +163,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
 
     private void PreviewVideoPlayerStateOnViewPointFovChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<float> e)
     {
-        if (e.Setter != this)
+        if (e.Context != this)
             PreviewFovValue = (int)e.Value;
     }
     
@@ -222,20 +171,45 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     {
         _previewVideoPlayerState.SetViewPointFov(value, this);
     }
-    
-    
 
-    private void ConversionManagerOnPreviewedVideoChanged(object? sender, IConvertibleVideoModel? video)
+    partial void OnAutoRenderOnChangesChanged(bool value)
+    {
+        if (value)
+            _ = LiveUpdateSnapshot();
+    }
+
+    partial void OnTransformYawValueChanged(int value)
+    {
+        Video.FrameRotation = Video.FrameRotation with { Yaw = value };
+        if (AutoRenderOnChanges)
+            _ = LiveUpdateSnapshot();
+    }
+
+    partial void OnTransformPitchValueChanged(int value)
+    {
+        Video.FrameRotation = Video.FrameRotation with { Pitch = value };
+        if (AutoRenderOnChanges)
+            _ = LiveUpdateSnapshot();
+    }
+
+    partial void OnTransformRollValueChanged(int value)
+    {
+        Video.FrameRotation = Video.FrameRotation with { Roll = value };
+        if (AutoRenderOnChanges)
+            _ = LiveUpdateSnapshot();
+    }
+
+    public async Task SetPreviewedVideo(IConvertableVideo? video)
     {
         if (video == null)
-            return;
+            video = _conversionManager.GetPlaceholderVideo();
         
         IImage? thumb = null;
         var thumbBytes = _mediaPreviewService.GetCachedThumbnail(video.MediaInfo);
         if (thumbBytes != null)
             thumb = thumbBytes.ToBitmap();
 
-        _ = SetActiveVideoModelAsync(video, thumb);
+        await SetActiveVideoModelAsync(video, thumb);
     }
 
     /// <summary>
@@ -245,15 +219,14 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     /// <param name="video"></param>
     /// <param name="initialPreviewImage">Image to show initially in the snapshot image control before
     /// the snapshot frames get generated.</param>
-    public async Task SetActiveVideoModelAsync(IConvertibleVideoModel? video, IImage? initialPreviewImage)
+    public async Task SetActiveVideoModelAsync(IConvertableVideo? video, IImage? initialPreviewImage)
     {
-        if (video == VideoModel)
+        if (video == Video)
             return;
         
         BlurImageVisible = true;
-        VideoModel = video;
-        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, video, null);
-        
+        Video = video;
+
         if (video == null && initialPreviewImage == null)
             return;
 
@@ -262,10 +235,14 @@ public partial class ConversionPreviewViewModel : ViewModelBase
             CurrentSnapshotFrameImage = initialPreviewImage;
             SnapshotFrameImages = [initialPreviewImage];
         }
+        if (video == _conversionManager.GetPlaceholderVideo())
+            return;
+        
+        KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, video, null);
+
         if (video == null)
             return;
 
-        //video.TimelineCropUpdated += OnVideoTimelineCropUpdated;
         
         var prevAutoRenderSetting = AutoRenderOnChanges;
         AutoRenderOnChanges = false;
@@ -286,13 +263,6 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         await RenderSnapshotFramesAsync();
         NextFrame();
     }
-
-    // private void OnVideoTimelineCropUpdated(object? sender, TimelineCrop e)
-    // {
-    //     var video = sender as IConvertibleVideoModel;
-    //     CropTimelineStartTime = e.StartTimeSeconds ?? 0;
-    //     CropTimelineEndTime = e.EndTimeSeconds ?? video!.MediaInfo.DurationInSeconds;
-    // }
 
     [RelayCommand]
     public void NextFrame()
@@ -340,9 +310,9 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         {
             var transformationSettings = new SnapshotFrameTransformationSettings()
             {
-                Rotation = VideoModel.FrameRotation
+                Rotation = Video.FrameRotation
             };
-            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(VideoModel.MediaInfo,
+            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(Video.MediaInfo,
                 transformationSettings, frameCount, (progress) => SnapshotRenderProgress = progress, myCts.Token);
 
             var bitmaps = new IImage[bitmapBytes.Count];
@@ -422,12 +392,12 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     [RelayCommand]
     public void ResetVideoTimelineCrop()
     {
-        if (VideoModel == null)
+        if (Video == null)
             return;
 
-        VideoModel.TimelineCrop = new TimelineCrop();
+        Video.TimelineCrop = new TimelineCrop();
         TimelineCropStartTime = 0;
-        TimelineCropEndTime = VideoModel.MediaInfo.DurationInSeconds;
+        TimelineCropEndTime = Video.MediaInfo.DurationInSeconds;
        
     }
 
@@ -454,10 +424,10 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     {
         try
         {
-            var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(VideoModel,
+            var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(Video,
                 (progress) => KeyFrameVideoRenderProgress = progress, CancellationToken.None);
             
-            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, VideoModel, keyFrameVideo);
+            KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, Video, keyFrameVideo);
         }
         catch (Exception e)
         {
@@ -465,25 +435,5 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         }
         
     }
-    //
-    // private void OnVideoPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    // {
-    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerYaw)) 
-    //         PreviewYawValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerYaw;
-    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerPitch)) 
-    //         PreviewPitchValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerPitch;
-    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerRoll)) 
-    //         PreviewRollValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerRoll;
-    //     if (e.PropertyName == nameof(VideoPlayerViewModel.VideoPlayerFov))
-    //         PreviewFovValue = (int)KeyFrameVideoPlayerViewModel.VideoPlayerFov;
-    //     
-    //     // Yeah, there will be some double updates going on, and this whole mess of a video control must be
-    //     // implemented better at some point...
-    //     // if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineStartTime))
-    //     //     CropTimelineStartTime = KeyFrameVideoPlayerViewModel.CropTimelineStartTime;
-    //     // if (e.PropertyName == nameof(VideoPlayerViewModel.CropTimelineEndTime))
-    //     //     CropTimelineEndTime = KeyFrameVideoPlayerViewModel.CropTimelineEndTime;
-    //     
-    //     
-    // }
+    
 }

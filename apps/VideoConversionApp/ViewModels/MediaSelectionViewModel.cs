@@ -23,16 +23,10 @@ public partial class MediaSelectionViewModel : ViewModelBase
     private readonly IStorageDialogProvider _storageDialogProvider;
     private readonly IMediaPreviewService _mediaPreviewService;
     private readonly IConversionManager _conversionManager;
+    private readonly ConversionPreviewViewModel _conversionPreviewViewModel;
 
-    public bool SortDescending
-    {
-        get => field;
-        set
-        {
-            SetProperty(ref field, value);
-            VideoList.Sort(VideoListSortComparison);
-        }
-    }
+    [ObservableProperty]
+    public partial bool SortDescending { get; set; }
     
     public string[] SortOptions =>
     [
@@ -40,32 +34,12 @@ public partial class MediaSelectionViewModel : ViewModelBase
         "Filename",
         "Duration"
     ];
-
-    public string SelectedSort
-    {
-        get => field;
-        set
-        {
-            SetProperty(ref field, value);
-            VideoList.Sort(VideoListSortComparison);
-        }
-    }
+    [ObservableProperty]
+    public partial string SelectedSort { get; set; }
     
-    //[ObservableProperty]
-    //public partial VideoThumbViewModel? SelectedVideoThumbViewModel { get; set; }
-    public VideoThumbViewModel? SelectedVideoThumbViewModel
-    {
-        get => field;
-        set
-        {
-            SetProperty(ref field, value);
-            _conversionManager.SetPreviewedVideo(value?.LinkedVideo);            
-        }
-    }
-
-    // [ObservableProperty] // Maybe consider SortedList instead? And notify manually.
-    // public partial ObservableCollection<VideoThumbViewModel> VideoList { get; private set; } =
-    //     new ObservableCollection<VideoThumbViewModel>();
+    [ObservableProperty]
+    public partial VideoThumbViewModel? SelectedVideoThumbViewModel { get; set; }
+    
     public SortableObservableCollection<VideoThumbViewModel> VideoList
     {
         get => field;
@@ -80,13 +54,15 @@ public partial class MediaSelectionViewModel : ViewModelBase
         IMediaInfoService mediaInfoService, 
         IStorageDialogProvider storageDialogProvider,
         IMediaPreviewService mediaPreviewService,
-        IConversionManager conversionManager)
+        IConversionManager conversionManager,
+        ConversionPreviewViewModel conversionPreviewViewModel)
     {
         _appSettingsService = appSettingsService;
         _mediaInfoService = mediaInfoService;
         _storageDialogProvider = storageDialogProvider;
         _mediaPreviewService = mediaPreviewService;
         _conversionManager = conversionManager;
+        _conversionPreviewViewModel = conversionPreviewViewModel;
         SelectedSort = SortOptions.First();
 
         if (Design.IsDesignMode)
@@ -95,6 +71,22 @@ public partial class MediaSelectionViewModel : ViewModelBase
             VideoList.Add(new VideoThumbViewModel());
         }
         
+    }
+
+    partial void OnSortDescendingChanged(bool value)
+    {
+        VideoList.Sort(VideoListSortComparison);
+    }
+
+    partial void OnSelectedSortChanged(string value)
+    {
+        VideoList.Sort(VideoListSortComparison);
+    }
+
+    partial void OnSelectedVideoThumbViewModelChanged(VideoThumbViewModel? value)
+    {
+        _ = _conversionPreviewViewModel.SetPreviewedVideo(value?.LinkedVideo);
+        //_conversionManager.SetPreviewedVideo(value?.LinkedVideo);
     }
 
 
@@ -119,7 +111,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
                 continue;
             
             var mediaInfo = await _mediaInfoService.ParseMediaAsync(fullFilename!);
-            IConvertibleVideoModel? video = null;
+            IConvertableVideo? video = null;
             if (mediaInfo.IsValidVideo && mediaInfo.IsGoProMaxFormat)
             {
                 video = _conversionManager.AddVideoToPool(mediaInfo);
@@ -147,9 +139,6 @@ public partial class MediaSelectionViewModel : ViewModelBase
                 VideoList.Remove(thumbViewModel);
                 if (thumbViewModel.LinkedVideo != null)
                 {
-                    // Should be removed automatically now.
-                    // thumbViewModel.LinkedVideo.SettingsChanged -= ConvertibleVideoOnOnConversionSettingsChanged;
-                    // thumbViewModel.LinkedVideo.IsEnabledForConversionUpdated += ConvertibleVideoOnIsEnabledForConversionUpdated;
                     _conversionManager.RemoveVideoFromPool(thumbViewModel.LinkedVideo);
                 }
             });
@@ -186,7 +175,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
 
     private void VideoOnIsEnabledForConversionUpdated(object? sender, bool isEnabledForConversion)
     {
-        var video = sender as IConvertibleVideoModel;
+        var video = sender as IConvertableVideo;
         var videoThumbViewModel = VideoList.FirstOrDefault(x => x.LinkedVideo == video);
         if (videoThumbViewModel == null)
             return;
@@ -226,7 +215,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
 
     private void VideoOnConversionSettingsChanged(object? sender, EventArgs e)
     {
-        var video = sender as IConvertibleVideoModel;
+        var video = sender as IConvertableVideo;
         var videoThumbViewModel = VideoList.FirstOrDefault(x => x.LinkedVideo == video);
         if (videoThumbViewModel == null)
             return;
@@ -243,8 +232,6 @@ public partial class MediaSelectionViewModel : ViewModelBase
             if (video != null)
             {
                 _conversionManager.RemoveVideoFromPool(video);
-                // Should be removed automatically now.
-                // video.SettingsChanged -= ConvertibleVideoOnOnConversionSettingsChanged;
             }
         }
         VideoList.Clear();
