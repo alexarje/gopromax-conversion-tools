@@ -86,7 +86,6 @@ public partial class MediaSelectionViewModel : ViewModelBase
     partial void OnSelectedVideoThumbViewModelChanged(VideoThumbViewModel? value)
     {
         _ = _conversionPreviewViewModel.SetPreviewedVideo(value?.LinkedVideo);
-        //_conversionManager.SetPreviewedVideo(value?.LinkedVideo);
     }
 
 
