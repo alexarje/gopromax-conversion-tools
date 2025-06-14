@@ -25,12 +25,15 @@ public class PreviewVideoPlayerState
     public decimal TimelineCropStartPosition { get; private set; }
     public decimal TimelineCropEndPosition { get; private set; }
 
+    public bool ControlsEnabled { get; private set; } = true;
+    
     public event EventHandler<StateEventArgs<float>>? ViewPointYawChanged;
     public event EventHandler<StateEventArgs<float>>? ViewPointPitchChanged;
     public event EventHandler<StateEventArgs<float>>? ViewPointRollChanged;
     public event EventHandler<StateEventArgs<float>>? ViewPointFovChanged;
     public event EventHandler<StateEventArgs<decimal>>? TimelineCropStartPositionChanged;
     public event EventHandler<StateEventArgs<decimal>>? TimelineCropEndPositionChanged;
+    public event EventHandler<StateEventArgs<bool>>? ControlsEnabledChanged;
 
     public PreviewVideoPlayerState()
     {
@@ -96,5 +99,14 @@ public class PreviewVideoPlayerState
             TimelineCropEndPositionChanged?.Invoke(this, new StateEventArgs<decimal>() { Context = context, Value = value });
     }
 
+    public void SetControlsEnabled(bool value, object context, bool raiseEvent = true)
+    {
+        if (ControlsEnabled == value)
+            return;
+        
+        ControlsEnabled = value;
+        if (raiseEvent)
+            ControlsEnabledChanged?.Invoke(this, new StateEventArgs<bool>() { Context = context, Value = value });
+    }
 
 }

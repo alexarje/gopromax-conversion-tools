@@ -235,12 +235,10 @@ public partial class ConversionPreviewViewModel : ViewModelBase
             CurrentSnapshotFrameImage = initialPreviewImage;
             SnapshotFrameImages = [initialPreviewImage];
         }
-        if (video == _conversionManager.GetPlaceholderVideo())
-            return;
         
         KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, video, null);
 
-        if (video == null)
+        if (video == null || video == _conversionManager.GetPlaceholderVideo())
             return;
 
         

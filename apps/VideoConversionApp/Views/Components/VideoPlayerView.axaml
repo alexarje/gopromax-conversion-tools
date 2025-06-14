@@ -5,6 +5,7 @@
   xmlns:vlca="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
   xmlns:viewModels="clr-namespace:VideoConversionApp.ViewModels"
   xmlns:components="clr-namespace:VideoConversionApp.ViewModels.Components"
+  xmlns:converters="clr-namespace:VideoConversionApp.Converters"
   mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="440"
   x:Class="VideoConversionApp.Views.Components.VideoPlayerView"
   DataContextChanged="OnDataContextChanged"
@@ -14,6 +15,7 @@
     <components:VideoPlayerViewModel />
   </Design.DataContext>
 
+  
   <Panel>
     <vlca:VideoView Name="Player"
       HorizontalAlignment="Stretch"

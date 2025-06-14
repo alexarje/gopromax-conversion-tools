@@ -85,6 +85,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
                 _mediaPlayer.Media.Dispose();
 
             SetEventListeners();
+            var enableControls = vm.SourceVideo != null && vm.SourceVideo.MediaInfo.Filename != ":placeholder:";
+            vm.PlayerState.SetControlsEnabled(enableControls, this);
 
             if (vm.VideoUri != null)
             {
@@ -120,6 +122,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
         playerState.ViewPointYawChanged -= PlayerStateOnViewPointYawChanged;
         playerState.TimelineCropEndPositionChanged -= PlayerStateOnTimelineCropEndPositionChanged;
         playerState.TimelineCropStartPositionChanged -= PlayerStateOnTimelineCropStartPositionChanged;
+        playerState.ControlsEnabledChanged -= PlayerStateOnControlsEnabledChanged;
         
         playerState.ViewPointFovChanged += PlayerStateOnViewPointFovChanged;
         playerState.ViewPointPitchChanged += PlayerStateOnViewPointPitchChanged;
@@ -127,6 +130,12 @@ public partial class VideoPlayerView : UserControl, IDisposable
         playerState.ViewPointYawChanged += PlayerStateOnViewPointYawChanged;
         playerState.TimelineCropEndPositionChanged += PlayerStateOnTimelineCropEndPositionChanged;
         playerState.TimelineCropStartPositionChanged += PlayerStateOnTimelineCropStartPositionChanged;
+        playerState.ControlsEnabledChanged += PlayerStateOnControlsEnabledChanged;
+    }
+
+    private void PlayerStateOnControlsEnabledChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<bool> e)
+    {
+        ControlsPanel.IsEnabled = e.Value;
     }
 
     private void PlayerStateOnTimelineCropStartPositionChanged(object? sender, PreviewVideoPlayerState.StateEventArgs<decimal> e)
@@ -351,6 +360,8 @@ public partial class VideoPlayerView : UserControl, IDisposable
     private void CalculateAndSetCropMarkerPositions(decimal cropStart, decimal cropEnd)
     {
         var timeLineLength = ViewModel?.SourceVideo?.MediaInfo.DurationInSeconds ?? 1;
+        if (timeLineLength <= 0)
+            timeLineLength = 1;
         var startMarkerPos = (double)cropStart / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
         var endMarkerPos = (double)cropEnd / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;
 
