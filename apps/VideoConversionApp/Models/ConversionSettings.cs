@@ -6,5 +6,11 @@ namespace VideoConversionApp.Models;
 /// </summary>
 public class ConversionSettings
 {
+    public string OutputDirectory { get; set; }
+    public bool OutputBesideOriginals { get; set; }
+    public string OutputFilenamePattern { get; set; }
+    public string VideoCodecinFfmpeg { get; set; }
+    public string AudioCodecinFfmpeg { get; set; }
+    public bool OutputAudio { get; set; }
     
 }

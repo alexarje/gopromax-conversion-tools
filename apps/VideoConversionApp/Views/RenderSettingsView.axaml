@@ -3,10 +3,19 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
-  mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="650"
+  xmlns:models="clr-namespace:VideoConversionApp.Models"
+  mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="850"
   x:Class="VideoConversionApp.Views.RenderSettingsView"
   x:DataType="vm:RenderSettingsViewModel">
 
+  <UserControl.Styles>
+    <Style Selector="Button">
+      <Setter Property="Margin" Value="4 8 4 8"></Setter>
+      <Setter Property="CornerRadius" Value="4"></Setter>
+      <Setter Property="FontSize" Value="14"></Setter>
+      <Setter Property="Padding" Value="8"></Setter>
+    </Style>
+  </UserControl.Styles>
 
   <DockPanel>
     <Border Classes="pane-heading" DockPanel.Dock="Top">
@@ -32,7 +41,8 @@
               <Border CornerRadius="6" BorderThickness="1" BorderBrush="Black" ClipToBounds="True">
                 <Border CornerRadius="6" BorderThickness="0" BorderBrush="Black" ClipToBounds="True">
                   <TabStrip Name="SelectedOutputDirectoryMethod" Theme="{StaticResource TabStripButtonRow}"
-                    SelectedValue="{Binding SelectedOutputDirectoryMethod}">
+                    SelectedValue="{Binding SelectedOutputDirectoryMethod}" 
+                    SelectedValueBinding="{Binding Name, DataType=TabStripItem}">
                     <TabStripItem Content="Selected Directory" Name="OutputToSelectedDir"></TabStripItem>
                     <TabStripItem Content="Alongside Originals" Name="OutputToSameDir"></TabStripItem>
                   </TabStrip>
@@ -46,13 +56,13 @@
               <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" 
                 IsEnabled="{Binding IsOutputToSelectedDirSelected}" />
               <Button Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Margin="10 0 0 0"
-                IsEnabled="{Binding IsOutputToSelectedDirSelected}">Browse</Button>
+                IsEnabled="{Binding IsOutputToSelectedDirSelected}">Browse...</Button>
               
               <TextBlock Grid.Row="1" VerticalAlignment="Center" Margin="0 10 20 0">Naming pattern:</TextBlock>
-              <TextBox Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0 10 0 0"/>
+              <TextBox Text="{Binding FilenamePattern}" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0 10 0 0"/>
 
               <TextBlock Grid.Row="2" VerticalAlignment="Center" Margin="0 10 20 0">Filename preview:</TextBlock>
-              <TextBox Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Margin="0 10 0 0" IsEnabled="False"/>
+              <TextBox Text="{Binding FilenamePreview}" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Margin="0 10 0 0" IsEnabled="False"/>
               
               <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Vertical" Margin="0 10 0 0">
                 <TextBlock Grid.Row="2" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0 0 0 10">
@@ -86,11 +96,12 @@
         <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3" ClipToBounds="True">
           <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,*,*" Classes="orientation-controls-grid"
             HorizontalAlignment="Center">
-            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
               <Border CornerRadius="6" BorderThickness="1" BorderBrush="Black" ClipToBounds="True">
                 <Border CornerRadius="6" BorderThickness="0" BorderBrush="Black" ClipToBounds="True">
                   <TabStrip Name="SelectedVideoCodec" Theme="{StaticResource TabStripButtonRow}"
-                    SelectedValue="{Binding SelectedVideoCodecTab}">
+                    SelectedValue="{Binding SelectedVideoCodecTab}"
+                    SelectedValueBinding="{Binding Name, DataType=TabStripItem}">
                     <TabStripItem Content="Apple ProRes" Name="VcProres"></TabStripItem>
                     <TabStripItem Content="Avid DNxHD" Name="VcDnxhd"></TabStripItem>
                     <TabStripItem Content="Cineform" Name="VcCineform"></TabStripItem>
@@ -103,7 +114,25 @@
             <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" IsEnabled="{Binding IsOtherVideoCodecSelected}"
               Margin="4 20 0 0" ColumnDefinitions="Auto,*" RowDefinitions="*,*">
               <TextBlock Grid.Row="0" VerticalAlignment="Center" Margin="0 0 20 0">Custom Codec (ffmpeg):</TextBlock>
-              <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="0" Grid.Column="1" MaxWidth="300" ItemsSource="{Binding VideoCodecs}"
+                SelectedValue="{Binding CustomVideoCodecName}"
+                SelectedValueBinding="{Binding Name}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate DataType="models:CodecEntry">
+                    <StackPanel Orientation="Horizontal" Width="400" HorizontalAlignment="Left">
+                      <StackPanel.Styles>
+                        <Style Selector="TextBlock">
+                          <Setter Property="Margin" Value="0 0 6 0" />
+                        </Style>
+                      </StackPanel.Styles>
+                      <TextBlock FontWeight="Bold" Text="{Binding Name}"></TextBlock>
+                      <TextBlock Text="[lossless]" IsVisible="{Binding IsLossless}"></TextBlock>
+                      <TextBlock Text="[lossy]" IsVisible="{Binding IsLossy}"></TextBlock>
+                      <TextBlock Text="{Binding Description}"></TextBlock>
+                    </StackPanel>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
               <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0 10 20 0">Resolution:</TextBlock>
               <TextBlock Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0 10 0 0">Fixed 4032x2388 (equirectangular)</TextBlock>
             </Grid>
@@ -117,11 +146,12 @@
         <Border Padding="10" BorderBrush="Black" BorderThickness="1" CornerRadius="3" ClipToBounds="True">
           <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,*,*" Classes="orientation-controls-grid"
             HorizontalAlignment="Center">
-            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
               <Border CornerRadius="6" BorderThickness="1" BorderBrush="Black" ClipToBounds="True">
                 <Border CornerRadius="6" BorderThickness="0" BorderBrush="Black" ClipToBounds="True">
                   <TabStrip Name="SelectedAudioCodec" Theme="{StaticResource TabStripButtonRow}"
-                    SelectedValue="{Binding SelectedAudioCodecTab}">
+                    SelectedValue="{Binding SelectedAudioCodecTab}"
+                    SelectedValueBinding="{Binding Name, DataType=TabStripItem}">
                     <TabStripItem Content="PCM S16LE" Name="AcPcms16le"></TabStripItem>
                     <TabStripItem Content="PCM S32LE" Name="AcPcms32le"></TabStripItem>
                     <TabStripItem Content="Other" Name="AcOther"></TabStripItem>
@@ -137,7 +167,27 @@
             <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" IsEnabled="{Binding IsOtherAudioCodecSelected}"
               Margin="4 20 0 0" ColumnDefinitions="Auto,*" RowDefinitions="*,*">
               <TextBlock Grid.Row="0" VerticalAlignment="Center" Margin="0 0 20 0">Custom Codec (ffmpeg):</TextBlock>
-              <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" />
+              <!-- <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Text="{Binding CustomAudioCodecName}"/> -->
+              <ComboBox Grid.Row="0" Grid.Column="1" MaxWidth="300" ItemsSource="{Binding AudioCodecs}"
+                SelectedValue="{Binding CustomAudioCodecName}"
+                SelectedValueBinding="{Binding Name}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate DataType="models:CodecEntry">
+                    <StackPanel Orientation="Horizontal" Width="400" HorizontalAlignment="Left">
+                      <StackPanel.Styles>
+                        <Style Selector="TextBlock">
+                          <Setter Property="Margin" Value="0 0 6 0" />
+                        </Style>
+                      </StackPanel.Styles>
+                      <TextBlock FontWeight="Bold" Text="{Binding Name}"></TextBlock>
+                      <TextBlock Text="[lossless]" IsVisible="{Binding IsLossless}"></TextBlock>
+                      <TextBlock Text="[lossy]" IsVisible="{Binding IsLossy}"></TextBlock>
+                      <TextBlock Text="{Binding Description}"></TextBlock>
+                    </StackPanel>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              
             </Grid>
 
           </Grid>

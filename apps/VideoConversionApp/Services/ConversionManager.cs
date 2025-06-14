@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 
@@ -100,23 +102,50 @@ public class ConversionManager : IConversionManager
         public long SizeBytes { get; } = 0;
         public string[]? ValidationIssues { get; } = null;
     }
+
+    private class PreviewDummyMediaInfo : IMediaInfo
+    {
+        public string Filename { get; } = "GS204012.360";
+        public bool IsValidVideo { get; } = true;
+        public bool IsGoProMaxFormat { get; } = true;
+        public decimal DurationInSeconds { get; } = (decimal)143.528;
+        public DateTime CreatedDateTime { get; } = DateTime.Now;
+        public long SizeBytes { get; } = 200_000_000;
+        public string[]? ValidationIssues { get; } = null;
+    }
     
-    public event EventHandler<IConvertableVideo?>? PreviewedVideoChanged;
-    
+    private ConversionSettings? _conversionSettings;
     private List<ConvertableVideo> _convertibleVideoModels = new ();
     public IReadOnlyList<IConvertableVideo> ConversionCandidates => _convertibleVideoModels;
-    private IConvertableVideo? _previewedVideo;
+    
+    // Placeholder video, representing "no video" in views and such.
     private readonly ConvertableVideo _placeholderVideo;
-
-    public ConversionManager()
+    // Dummy video, for filename previews and such.
+    private readonly ConvertableVideo _dummyVideo;
+    
+    public ConversionManager(IAppSettingsService appSettingsService)
     {
         _placeholderVideo = new ConvertableVideo(new PlaceholderMediaInfo());
+        _dummyVideo = new ConvertableVideo(new PreviewDummyMediaInfo())
+        {
+            FrameRotation = new AvFilterFrameRotation(),
+            TimelineCrop = new TimelineCrop()
+            {
+                StartTimeSeconds = (decimal)12.5,
+                EndTimeSeconds = 140
+            }
+        };
     }
 
 
     public IConvertableVideo GetPlaceholderVideo()
     {
         return _placeholderVideo;
+    }
+
+    public IConvertableVideo GetDummyVideo()
+    {
+        return _dummyVideo;
     }
 
     public IConvertableVideo AddVideoToPool(IMediaInfo mediaInfo)
@@ -135,16 +164,57 @@ public class ConversionManager : IConversionManager
         v.RemoveListeners();
     }
 
-    public IConvertableVideo? GetPreviewedVideo() => _previewedVideo;
-    
-    public void SetPreviewedVideo(IConvertableVideo? video)
+    public ConversionSettings GetConversionSettings()
     {
-        if (_previewedVideo != video)
+        if (_conversionSettings == null)
         {
-            _previewedVideo = video;
-            PreviewedVideoChanged?.Invoke(this, video);
+            // TODO load default conversion settings from the service...
+            
+            _conversionSettings = new ConversionSettings
+            {
+                OutputBesideOriginals = false,
+                OutputDirectory = "/tmp",
+                AudioCodecinFfmpeg = "pcm_s16le",
+                OutputAudio = true,
+                OutputFilenamePattern = "%o-%c-%d",
+                VideoCodecinFfmpeg = "prores"
+            };
         }
+        return _conversionSettings;
     }
 
-    
+    public void SetConversionSettings(ConversionSettings settings)
+    {
+        _conversionSettings = settings;
+        // TODO validate settings
+    }
+
+    public string GetFilenameFromPattern(IMediaInfo mediaInfo, TimelineCrop crop, string pattern)
+    {
+        var cropElems = new List<string>();
+        if (crop.StartTimeSeconds != null && crop.StartTimeSeconds > 0)
+        {
+            var startTime = crop.StartTimeSeconds;
+            var endTime = crop.EndTimeSeconds ?? mediaInfo.DurationInSeconds;
+            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
+            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
+        }
+        else if (crop.EndTimeSeconds != null && crop.EndTimeSeconds > 0)
+        {
+            var startTime = crop.StartTimeSeconds ?? 0;
+            var endTime = crop.EndTimeSeconds;
+            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
+            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
+        }
+        // e.g. 00-01-22.332__00-02-44.692
+        var cropString = string.Join("__", cropElems);
+
+        var fn = Path.GetFileNameWithoutExtension(mediaInfo.Filename);
+        var output = pattern.Replace("%o", fn)
+            .Replace("%c", cropString)
+            .Replace("%d", mediaInfo.CreatedDateTime.ToString("yyyy-MM-ddTHH-mm-ss"));
+            
+        return output;
+        
+    }
 }

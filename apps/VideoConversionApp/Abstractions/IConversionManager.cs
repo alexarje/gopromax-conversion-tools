@@ -10,6 +10,10 @@ namespace VideoConversionApp.Abstractions;
 public interface IConversionManager
 {
     IConvertableVideo GetPlaceholderVideo();
+    IConvertableVideo GetDummyVideo();
     IConvertableVideo AddVideoToPool(IMediaInfo mediaInfo);
     void RemoveVideoFromPool(IConvertableVideo video);
+    ConversionSettings GetConversionSettings();
+    void SetConversionSettings(ConversionSettings settings);
+    string GetFilenameFromPattern(IMediaInfo mediaInfo, TimelineCrop crop, string pattern);
 }
