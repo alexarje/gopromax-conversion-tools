@@ -32,7 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase
             MediaSelectionViewModel = new MediaSelectionViewModel(null!, null!, 
                 null!, null!, null!, ConversionPreviewViewModel);
             RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!, null!);
-            RenderQueueViewModel = new RenderQueueViewModel();
+            RenderQueueViewModel = new RenderQueueViewModel(null!, null!);
         }
     }
     

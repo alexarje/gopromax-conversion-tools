@@ -3,13 +3,29 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:VideoConversionApp.ViewModels"
+  xmlns:converters="clr-namespace:VideoConversionApp.Converters"
+  xmlns:views="clr-namespace:VideoConversionApp.Views"
   mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
   x:DataType="vm:RenderQueueViewModel"
-  x:Class="VideoConversionApp.Views.RenderQueueView">
+  x:Class="VideoConversionApp.Views.RenderQueueView"
+  Name="RenderQueueViewElement">
 
   <Design.DataContext>
-    <vm:RenderQueueViewModel />
+    <vm:RenderQueueViewModel>
+      <x:Arguments>
+        <x:Null></x:Null>
+        <x:Null></x:Null>
+      </x:Arguments>
+    </vm:RenderQueueViewModel>
   </Design.DataContext>
+  
+  <UserControl.Resources>
+    <converters:DecimalToTimeStringConverter x:Key="DecimalToTimeStringConverter" />
+    <converters:DateTimeAsLocalFormatConverter x:Key="DateTimeAsLocalFormatConverter" />
+    <converters:BytesAsDataSizeStringConverter x:Key="BytesAsDataSizeStringConverter" />
+    <converters:VideoOutputFilenameConverter x:Key="VideoOutputFilenameConverter"/>
+    <converters:TimelineCropAsStringConverter x:Key="TimelineCropAsStringConverter" />
+  </UserControl.Resources>
 
   <UserControl.Styles>
     <Style Selector="PathIcon.compact-render-successful">
@@ -68,7 +84,8 @@
                   IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).ShowExpandedView}">
                   <Grid ColumnDefinitions="Auto,Auto,*,Auto"  Margin="4" >
                     <PathIcon Grid.Column="0" Classes="compact-render-failed" Height="16" Margin="4 0 0 0"></PathIcon>
-                    <TextBlock Grid.Column="1" Margin="0 0 8 0" Width="125" VerticalAlignment="Center" TextAlignment="Center">GS10235.360</TextBlock>
+                    <TextBlock Grid.Column="1" Margin="0 0 8 0" Width="125" VerticalAlignment="Center" 
+                      TextAlignment="Center" Text="{Binding MediaInfo.Filename}" />
                     <Border Grid.Column="2" CornerRadius="20" ClipToBounds="True" Margin="0 0 6 0">
                       <ProgressBar Value="60" CornerRadius="0" Height="16" ShowProgressText="True" />
                     </Border>
@@ -123,16 +140,18 @@
                       </Border>
 
                       <Grid Grid.Column="1" RowDefinitions="2*,3*,3*,*,3*,3*,2*" Margin="10 0 0 0">
-                        <TextBlock Grid.Column="0" Grid.Row="1" Text="GS123234.360"
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding MediaInfo.Filename}"
                           TextTrimming="CharacterEllipsis" FontWeight="Bold"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
-                        <TextBlock Grid.Column="0" Grid.Row="2" Text="00:45:30"
+                        <TextBlock Grid.Column="0" Grid.Row="2" 
+                          Text="{Binding MediaInfo.DurationInSeconds, Converter={StaticResource DecimalToTimeStringConverter}}" 
                           TextTrimming="CharacterEllipsis"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
-                        <TextBlock Grid.Column="0" Grid.Row="4" Text="12.3.2025 12:34"
+                        <TextBlock Grid.Column="0" Grid.Row="4" 
+                          Text="{Binding MediaInfo.CreatedDateTime, Converter={StaticResource DateTimeAsLocalFormatConverter}}"
                           TextTrimming="CharacterEllipsis"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
-                        <TextBlock Grid.Column="0" Grid.Row="5" Text="345.6MB"
+                        <TextBlock Grid.Column="0" Grid.Row="5" Text="{Binding MediaInfo.SizeBytes, Converter={StaticResource BytesAsDataSizeStringConverter}}"
                           TextTrimming="CharacterEllipsis"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
                       </Grid>
@@ -145,13 +164,14 @@
                             </Style>
                           </Grid.Styles>
                           <TextBlock Grid.Column="0" Grid.Row="1">Output:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="1">/tmp/foo/bar/video-12335.mov</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="1" 
+                            Text="{Binding Converter={StaticResource VideoOutputFilenameConverter}, ConverterParameter={Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).ConversionManager}}" /> <!-- converter:  to patterened filename-->
                           <TextBlock Grid.Column="0" Grid.Row="2">Orientation:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="2">45 / 23 / 56</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding FrameRotation}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="4">Crop:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="4">00:00:15 - 00:02:12</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="4" Text="{Binding Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=false}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="5">Cropped duration:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="5">00:01:58</TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="5" Text="{Binding Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=true}"></TextBlock>
                         </Grid>
                       </Border>
                       

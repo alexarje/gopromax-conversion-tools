@@ -30,6 +30,7 @@ public partial class VideoThumbViewModel : ViewModelBase
     [ObservableProperty] public partial string ToolTipMessage { get; set; } = null!;
     [ObservableProperty] public partial bool HasConversionSettingsModified { get; set; } = false;
 
+    // TODO could just use converters that we have now
     public string VideoDateTimeString => VideoDateTime.ToString(DataFormattingHelpers.TryResolveActiveCulture());
     public string FileSizeString => FileSize.AsDataQuantityString(2);
     public string VideoLengthString => TimeSpan.FromSeconds(VideoLengthSeconds).ToString(@"hh\:mm\:ss");

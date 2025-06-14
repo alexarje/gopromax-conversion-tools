@@ -27,4 +27,9 @@ public struct AvFilterFrameRotation : IEquatable<AvFilterFrameRotation>
     {
         return Yaw == other.Yaw && Pitch == other.Pitch && Roll == other.Roll;
     }
+
+    public override string ToString()
+    {
+        return $"Yaw: {Yaw} | Pitch: {Pitch} | Roll: {Roll}";
+    }
 }
