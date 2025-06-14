@@ -86,7 +86,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
                 _mediaPlayer.Media.Dispose();
 
             SetEventListeners();
-            var enableControls = vm.SourceVideo != null && IMediaInfo.IsPlaceholderFile(vm.SourceVideo.MediaInfo.Filename);
+            var enableControls = vm.SourceVideo != null && !IMediaInfo.IsPlaceholderFile(vm.SourceVideo.MediaInfo.Filename);
             vm.PlayerState.SetControlsEnabled(enableControls, this);
 
             if (vm.VideoUri != null)
