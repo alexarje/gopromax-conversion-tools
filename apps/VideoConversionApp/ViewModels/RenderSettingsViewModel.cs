@@ -1,7 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 
@@ -11,9 +16,14 @@ public partial class RenderSettingsViewModel : ViewModelBase
 {
     private readonly IConversionManager _conversionManager;
     private readonly IMediaConverterService _converterService;
+    private readonly IStorageDialogProvider _storageDialogProvider;
 
     [ObservableProperty]
     public partial string SelectedOutputDirectoryMethod { get; set; }
+    [ObservableProperty]
+    public partial string SelectedOutputDirectory { get; set; }
+    [ObservableProperty]
+    public partial string SelectedOutputDirectoryIssues { get; set; }
     [ObservableProperty]
     public partial string SelectedVideoCodecTab { get; set; }
     [ObservableProperty]
@@ -29,7 +39,9 @@ public partial class RenderSettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial string CustomAudioCodecName { get; set; }
     [ObservableProperty]
-    public partial string FilenamePattern { get; set; }
+    public partial string FilenamePattern { get; set; } = "%o";
+    [ObservableProperty]
+    public partial string FilenamePatternIssues { get; set; }
     [ObservableProperty]
     public partial string FilenamePreview { get; set; }
     [ObservableProperty]
@@ -38,10 +50,12 @@ public partial class RenderSettingsViewModel : ViewModelBase
     public partial ObservableCollection<CodecEntry>? VideoCodecs { get; set; }
 
     public RenderSettingsViewModel(IConversionManager conversionManager,
-        IMediaConverterService converterService)
+        IMediaConverterService converterService,
+        IStorageDialogProvider storageDialogProvider)
     {
         _conversionManager = conversionManager;
         _converterService = converterService;
+        _storageDialogProvider = storageDialogProvider;
     }
 
     partial void OnSelectedOutputDirectoryMethodChanged(string value)
@@ -49,6 +63,14 @@ public partial class RenderSettingsViewModel : ViewModelBase
         IsOutputToSelectedDirSelected = value == "OutputToSelectedDir";
         _conversionManager.GetConversionSettings().OutputBesideOriginals = !IsOutputToSelectedDirSelected;
     }
+
+    partial void OnSelectedOutputDirectoryChanged(string value)
+    {
+        var exists = Directory.Exists(value);
+        SelectedOutputDirectoryIssues = exists ? string.Empty : "Directory does not exist";
+    }
+
+    
 
     partial void OnSelectedVideoCodecTabChanged(string value)
     {
@@ -100,11 +122,41 @@ public partial class RenderSettingsViewModel : ViewModelBase
         FilenamePreview = _conversionManager.GetFilenameFromPattern(
             dummyVideo.MediaInfo, dummyVideo.TimelineCrop, value);
         _conversionManager.GetConversionSettings().OutputFilenamePattern = value;
+
+        FilenamePatternIssues = string.IsNullOrWhiteSpace(FilenamePattern) ? "Filename pattern is empty" : "";
     }
 
     public void RefreshCodecLists()
     {
         VideoCodecs = new ObservableCollection<CodecEntry>(_converterService.GetAvailableVideoCodecs().Where(x => x.EncodingSupported));
         AudioCodecs = new ObservableCollection<CodecEntry>(_converterService.GetAvailableAudioCodecs().Where(x => x.EncodingSupported));
+    }
+
+    [RelayCommand]
+    private async Task BrowseOutputDirectory()
+    {
+        //var appSettings = _appSettingsService.GetSettings();
+        
+        var firstInputVideo = _conversionManager.ConversionCandidates.FirstOrDefault();
+        var suggestedStartLocation = !string.IsNullOrEmpty(SelectedOutputDirectory) && Directory.Exists(SelectedOutputDirectory)
+            ? SelectedOutputDirectory
+            : firstInputVideo != null
+                ? Path.GetDirectoryName(firstInputVideo.MediaInfo.Filename)
+                : null;
+
+        var storageProvider = _storageDialogProvider!.GetStorageProvider();
+        var selectedDirectory = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
+        {
+            AllowMultiple = false,
+            SuggestedStartLocation = suggestedStartLocation != null
+                ? await storageProvider.TryGetFolderFromPathAsync(new Uri(suggestedStartLocation))
+                : await storageProvider.TryGetWellKnownFolderAsync(WellKnownFolder.Videos),
+            Title = "Select Output Directory"
+        });
+        
+        if (selectedDirectory.Count > 0)
+            SelectedOutputDirectory = selectedDirectory[0].TryGetLocalPath()!;
+        
+
     }
 }

@@ -31,7 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!, null!, new PreviewVideoPlayerState());
             MediaSelectionViewModel = new MediaSelectionViewModel(null!, null!, 
                 null!, null!, null!, ConversionPreviewViewModel);
-            RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!);
+            RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!, null!);
             RenderQueueViewModel = new RenderQueueViewModel();
         }
     }

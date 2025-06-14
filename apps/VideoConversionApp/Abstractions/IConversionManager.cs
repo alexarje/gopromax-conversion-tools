@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Abstractions;
@@ -9,6 +10,8 @@ namespace VideoConversionApp.Abstractions;
 /// </summary>
 public interface IConversionManager
 {
+    IReadOnlyList<IConvertableVideo> ConversionCandidates { get; }
+    
     IConvertableVideo GetPlaceholderVideo();
     IConvertableVideo GetDummyVideo();
     IConvertableVideo AddVideoToPool(IMediaInfo mediaInfo);
