@@ -18,7 +18,7 @@ public class VideoNotPlaceholderConverter : IValueConverter
 
         if (value is IConvertableVideo video)
         {
-            return video.MediaInfo.Filename != ":placeholder:";
+            return IMediaInfo.IsPlaceholderFile(video.MediaInfo.Filename);
         }
 
         return true;

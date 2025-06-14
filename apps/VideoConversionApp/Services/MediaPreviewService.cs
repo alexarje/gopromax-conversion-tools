@@ -52,7 +52,7 @@ public class MediaPreviewService : IMediaPreviewService
         using var defaultThumb = AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/placeholder_snapframe.png"));
         var buffer = new byte[defaultThumb.Length];
         defaultThumb.ReadExactly(buffer, 0, buffer.Length);
-        _thumbnailCache.TryAdd(":placeholder:", buffer);
+        _thumbnailCache.TryAdd(IMediaInfo.PlaceHolderFilename, buffer);
     }
     
     public Task<byte[]?> QueueThumbnailGenerationAsync(IMediaInfo media, long timePositionMilliseconds)

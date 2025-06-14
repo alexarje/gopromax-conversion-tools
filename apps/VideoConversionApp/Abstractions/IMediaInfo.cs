@@ -11,4 +11,7 @@ public interface IMediaInfo
     public DateTime CreatedDateTime { get; }
     public long SizeBytes { get; }
     public string[]? ValidationIssues { get; }
+    
+    public static readonly string PlaceHolderFilename = ":placeholder:";
+    public static bool IsPlaceholderFile(string filename) => filename == PlaceHolderFilename;
 }

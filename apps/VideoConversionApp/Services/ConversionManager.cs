@@ -92,7 +92,7 @@ public class ConversionManager : IConversionManager
 
     private class PlaceholderMediaInfo : IMediaInfo
     {
-        public string Filename { get; } = ":placeholder:";
+        public string Filename { get; } = IMediaInfo.PlaceHolderFilename;
         public bool IsValidVideo { get; } = false;
         public bool IsGoProMaxFormat { get; } = false;
         public decimal DurationInSeconds { get; } = 0;
