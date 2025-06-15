@@ -157,7 +157,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         {
             var item = thumbGenerationJobs[i];
             var i1 = i;
-            var thumbTimePositionMs = appSettings.ThumbnailAtPosition / 100.0 * (long)(item.mediaInfo.DurationInSeconds * 1000);
+            var thumbTimePositionMs = appSettings.Previews.ThumbnailTimePositionPcnt / 100.0 * (long)(item.mediaInfo.DurationInSeconds * 1000);
             _ = _mediaPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePositionMs)
                 .ContinueWith(task =>
                 {

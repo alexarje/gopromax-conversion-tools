@@ -27,7 +27,7 @@ public class MediaConverterService : IMediaConverterService
         var codecParseRegex = new Regex(
             @"^\s(?<decode>[D\.])(?<encode>[E\.])(?<type>[VASDT\.])([I\.])(?<lossy>[L\.])(?<lossless>[S\.])\s(?<name>\w*)\s*(?<desc>.*)$");
         
-        var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
+        var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
         [
             "-codecs"
         ])

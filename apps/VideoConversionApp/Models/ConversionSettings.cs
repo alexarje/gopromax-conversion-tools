@@ -1,3 +1,5 @@
+using System;
+
 namespace VideoConversionApp.Models;
 
 /// <summary>
@@ -6,11 +8,26 @@ namespace VideoConversionApp.Models;
 /// </summary>
 public class ConversionSettings
 {
-    public string OutputDirectory { get; set; }
+    public event EventHandler<string>? OutputFilenamePatternChanged;
+
+    public string OutputFilenamePattern
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+                return;
+            
+            field = value;
+            OutputFilenamePatternChanged?.Invoke(this, value);
+        }
+    }
+    
     public bool OutputBesideOriginals { get; set; }
-    public string OutputFilenamePattern { get; set; }
+    public string OutputDirectory { get; set; }
     public string VideoCodecinFfmpeg { get; set; }
     public string AudioCodecinFfmpeg { get; set; }
     public bool OutputAudio { get; set; }
+    
     
 }

@@ -301,7 +301,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         var myCts = new CancellationTokenSource();
         _snapshotGenerationCts = myCts;
         
-        var frameCount = _appSettingsService.GetSettings().NumberOfSnapshotFrames;
+        var frameCount = (int)_appSettingsService.GetSettings().Previews.NumberOfSnapshotFrames;
         
         
         try

@@ -74,7 +74,7 @@ public class MediaPreviewService : IMediaPreviewService
     /// </summary>
     private void RunThumbnailProcessingThreads()
     {
-        var threadCount = _appSettingsService.GetSettings().NumberOfThumbnailProcessingThreads;
+        var threadCount = _appSettingsService.GetSettings().Previews.NumberOfThumbnailThreads;
         lock (_thumbnailQueueProcessingThreads)
         {
             for (var i = _thumbnailQueueProcessingThreads.Count - 1; i >= 0; i--)
@@ -109,7 +109,7 @@ public class MediaPreviewService : IMediaPreviewService
             var tmpThumbFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
             var thumbTimePosition = timePosMs / 1000.0;
             
-            var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
+            var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
                 [
                     "-loglevel", "8",
                     "-discard", "nokey",
@@ -183,7 +183,7 @@ public class MediaPreviewService : IMediaPreviewService
         
         var tmpFrameFilePath = Path.Combine(tempPath, "snapshot-%06d.jpg");
 
-        var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
+        var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
             [
                 "-loglevel", "8",
                 "-discard", "nokey",
@@ -287,7 +287,7 @@ public class MediaPreviewService : IMediaPreviewService
         
         var tmpVideoFilePath = Path.Combine(tempPath, "keyframevideo.mp4");
 
-        var processStartInfo = new ProcessStartInfo(appSettings.FfmpegPath,
+        var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
             [
                 "-loglevel", "8",
                 "-discard", "nokey",
@@ -341,7 +341,7 @@ public class MediaPreviewService : IMediaPreviewService
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && File.Exists(tmpVideoFilePath))
             {
-                var taggingProcessStartInfo = new ProcessStartInfo(appSettings.ExifToolPath,
+                var taggingProcessStartInfo = new ProcessStartInfo(appSettings.Paths.Exiftool,
                     [
                         "-api", "LargeFileSupport=1",
                         "-overwrite_original",

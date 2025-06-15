@@ -1,0 +1,23 @@
+paths:
+  exiftool: exiftool
+  ffmpeg: ffmpeg
+  ffprobe: ffprobe
+  
+previews:
+  number_of_snapshot_frames: 10
+  number_of_thumbnail_threads: 3
+  thumbnail_time_position_pcnt: 50
+  
+conversion:
+  codec_audio: pcm_s16le
+  codec_video: prores
+  output_audio: true
+  output_beside_originals: false
+  output_directory: '/tmp'  
+  output_filename_pattern: '%o-%c'
+  
+  
+  
+  
+  
+  

@@ -29,6 +29,10 @@ public partial class App : Application
         // Creates a ServiceProvider containing services from the provided IServiceCollection
         var services = collection.BuildServiceProvider();
         
+        // Load settings at the beginning.
+        var settings = services.GetRequiredService<IAppSettingsService>();
+        settings.LoadSettings();
+        
         var vm = services.GetRequiredService<MainWindowViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

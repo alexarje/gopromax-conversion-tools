@@ -163,15 +163,21 @@
                               <Setter Property="Margin" Value="1 0 8 1"></Setter>
                             </Style>
                           </Grid.Styles>
-                          <TextBlock Grid.Column="0" Grid.Row="1">Output:</TextBlock>
+                          <TextBlock Grid.Column="0" Grid.Row="1">Output to:</TextBlock>
                           <TextBlock Grid.Column="1" Grid.Row="1" 
-                            Text="{Binding Converter={StaticResource VideoOutputFilenameConverter}, ConverterParameter={Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).ConversionManager}}" /> <!-- converter:  to patterened filename-->
+                            Text="{Binding 
+                            Converter={StaticResource VideoOutputFilenameConverter}, 
+                            ConverterParameter={Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).ConversionManager}}" /> <!-- converter:  to patterened filename-->
                           <TextBlock Grid.Column="0" Grid.Row="2">Orientation:</TextBlock>
                           <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding FrameRotation}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="4">Crop:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="4" Text="{Binding Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=false}"></TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="4" 
+                            Text="{Binding 
+                            Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=false}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="5">Cropped duration:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="5" Text="{Binding Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=true}"></TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="5" 
+                            Text="{Binding 
+                            Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=true}"></TextBlock>
                         </Grid>
                       </Border>
                       
