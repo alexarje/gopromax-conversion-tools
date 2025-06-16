@@ -36,14 +36,14 @@ public abstract class ConfigElementBase<T>(AppConfig parent, T yamlModel, string
 {
     protected T YamlModel = yamlModel;
     protected AppConfig Parent = parent;
-    protected string Path { get; set; }
+    protected string Path { get; set; } = path;
 
     protected void RaiseEvent(string propertyName, object newValue)
     {
         Parent.RaisePropertyChanged(new ConfigChangedEventArgs()
         {
             PropertyName = propertyName,
-            PropertyPath = $"{path}{(path != "" ? "." : "")}{propertyName}",
+            PropertyPath = $"{Path}{(Path != "" ? "." : "")}{propertyName}",
             NewValue = newValue
         });
     }

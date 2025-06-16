@@ -10,6 +10,9 @@ namespace VideoConversionApp.Abstractions;
 /// </summary>
 public interface IConversionManager
 {
+    event EventHandler<IConvertableVideo>? VideoAddedToPool;
+    event EventHandler<IConvertableVideo>? VideoRemovedFromPool;
+
     IReadOnlyList<IConvertableVideo> ConversionCandidates { get; }
     
     IConvertableVideo GetPlaceholderVideo();

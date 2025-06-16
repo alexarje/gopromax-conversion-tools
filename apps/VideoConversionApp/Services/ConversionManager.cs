@@ -113,6 +113,10 @@ public class ConversionManager : IConversionManager
         public long SizeBytes { get; } = 200_000_000;
         public string[]? ValidationIssues { get; } = null;
     }
+
+
+    public event EventHandler<IConvertableVideo>? VideoAddedToPool;
+    public event EventHandler<IConvertableVideo>? VideoRemovedFromPool;
     
     private ConversionSettings? _conversionSettings;
     private List<ConvertableVideo> _convertibleVideoModels = new ();
@@ -152,6 +156,7 @@ public class ConversionManager : IConversionManager
     {
         var model = new ConvertableVideo(mediaInfo);
         _convertibleVideoModels.Add(model);
+        VideoAddedToPool?.Invoke(this, model);
         return model;
     }
     
@@ -162,6 +167,7 @@ public class ConversionManager : IConversionManager
         
         _convertibleVideoModels.Remove(v);
         v.RemoveListeners();
+        VideoRemovedFromPool?.Invoke(this, v);
     }
 
     public ConversionSettings GetConversionSettings()

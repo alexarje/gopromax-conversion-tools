@@ -8,6 +8,7 @@
   mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
   x:DataType="vm:RenderQueueViewModel"
   x:Class="VideoConversionApp.Views.RenderQueueView"
+  AttachedToVisualTree="Visual_OnAttachedToVisualTree"
   Name="RenderQueueViewElement">
 
   <Design.DataContext>
@@ -55,7 +56,7 @@
               Render Queue
             </TextBlock>
           </Border>
-          <Button Classes="basic-transparent">
+          <Button Classes="basic-transparent" Command="{Binding ClearRenderQueueCommand}">
             <Button.Content>
               <StackPanel Orientation="Horizontal" Margin="8 0 0 0">
                 <PathIcon Data="{StaticResource delete_regular}"></PathIcon>
@@ -85,7 +86,7 @@
                   <Grid ColumnDefinitions="Auto,Auto,*,Auto"  Margin="4" >
                     <PathIcon Grid.Column="0" Classes="compact-render-failed" Height="16" Margin="4 0 0 0"></PathIcon>
                     <TextBlock Grid.Column="1" Margin="0 0 8 0" Width="125" VerticalAlignment="Center" 
-                      TextAlignment="Center" Text="{Binding MediaInfo.Filename}" />
+                      TextAlignment="Center" Text="{Binding Video.MediaInfo.Filename}" />
                     <Border Grid.Column="2" CornerRadius="20" ClipToBounds="True" Margin="0 0 6 0">
                       <ProgressBar Value="60" CornerRadius="0" Height="16" ShowProgressText="True" />
                     </Border>
@@ -140,18 +141,18 @@
                       </Border>
 
                       <Grid Grid.Column="1" RowDefinitions="2*,3*,3*,*,3*,3*,2*" Margin="10 0 0 0">
-                        <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding MediaInfo.Filename}"
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding Video.MediaInfo.Filename}"
                           TextTrimming="CharacterEllipsis" FontWeight="Bold"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
                         <TextBlock Grid.Column="0" Grid.Row="2" 
-                          Text="{Binding MediaInfo.DurationInSeconds, Converter={StaticResource DecimalToTimeStringConverter}}" 
+                          Text="{Binding Video.MediaInfo.DurationInSeconds, Converter={StaticResource DecimalToTimeStringConverter}}" 
                           TextTrimming="CharacterEllipsis"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
                         <TextBlock Grid.Column="0" Grid.Row="4" 
-                          Text="{Binding MediaInfo.CreatedDateTime, Converter={StaticResource DateTimeAsLocalFormatConverter}}"
+                          Text="{Binding Video.MediaInfo.CreatedDateTime, Converter={StaticResource DateTimeAsLocalFormatConverter}}"
                           TextTrimming="CharacterEllipsis"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
-                        <TextBlock Grid.Column="0" Grid.Row="5" Text="{Binding MediaInfo.SizeBytes, Converter={StaticResource BytesAsDataSizeStringConverter}}"
+                        <TextBlock Grid.Column="0" Grid.Row="5" Text="{Binding Video.MediaInfo.SizeBytes, Converter={StaticResource BytesAsDataSizeStringConverter}}"
                           TextTrimming="CharacterEllipsis"
                           Margin="0,0,6,0" HorizontalAlignment="Left" />
                       </Grid>
@@ -165,18 +166,18 @@
                           </Grid.Styles>
                           <TextBlock Grid.Column="0" Grid.Row="1">Output to:</TextBlock>
                           <TextBlock Grid.Column="1" Grid.Row="1" 
-                            Text="{Binding 
+                            Text="{Binding Video,
                             Converter={StaticResource VideoOutputFilenameConverter}, 
                             ConverterParameter={Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).ConversionManager}}" /> <!-- converter:  to patterened filename-->
                           <TextBlock Grid.Column="0" Grid.Row="2">Orientation:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding FrameRotation}"></TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="2" Text="{Binding Video.FrameRotation}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="4">Crop:</TextBlock>
                           <TextBlock Grid.Column="1" Grid.Row="4" 
-                            Text="{Binding 
+                            Text="{Binding Video,
                             Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=false}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="5">Cropped duration:</TextBlock>
                           <TextBlock Grid.Column="1" Grid.Row="5" 
-                            Text="{Binding 
+                            Text="{Binding Video,
                             Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=true}"></TextBlock>
                         </Grid>
                       </Border>

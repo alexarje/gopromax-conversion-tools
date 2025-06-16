@@ -69,8 +69,18 @@ public partial class MediaSelectionViewModel : ViewModelBase
         {
             VideoList.Add(new VideoThumbViewModel());
             VideoList.Add(new VideoThumbViewModel());
+            return;
         }
         
+        _conversionManager.VideoRemovedFromPool += ConversionManagerOnVideoRemovedFromPool;
+        
+    }
+
+    private void ConversionManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
+    {
+        var match = VideoList.FirstOrDefault(x => x.LinkedVideo == video);
+        if (match != null)
+            VideoList.Remove(match);
     }
 
     partial void OnSortDescendingChanged(bool value)
