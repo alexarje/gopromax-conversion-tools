@@ -2,7 +2,7 @@ using System;
 
 namespace VideoConversionApp.Abstractions;
 
-public interface IMediaInfo
+public interface IInputVideoInfo
 {
     public string Filename { get; }
     public bool IsValidVideo { get; }

@@ -15,9 +15,9 @@ namespace VideoConversionApp.ViewModels;
 
 public partial class ConversionPreviewViewModel : ViewModelBase
 {
-    private readonly IMediaPreviewService _mediaPreviewService;
-    private readonly IAppSettingsService _appSettingsService;
-    private readonly IConversionManager _conversionManager;
+    private readonly IVideoPreviewService _videoPreviewService;
+    private readonly IAppConfigService _appConfigService;
+    private readonly IVideoPoolManager _videoPoolManager;
     private readonly PreviewVideoPlayerState _previewVideoPlayerState;
 
     public IList<IImage> SnapshotFrameImages { get; set; } = [];
@@ -66,14 +66,14 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     private CancellationTokenSource? _snapshotLiveUpdateCts;
     
     public ConversionPreviewViewModel(
-        IMediaPreviewService mediaPreviewService,
-        IAppSettingsService appSettingsService,
-        IConversionManager conversionManager,
+        IVideoPreviewService videoPreviewService,
+        IAppConfigService appConfigService,
+        IVideoPoolManager videoPoolManager,
         PreviewVideoPlayerState previewVideoPlayerState)
     {
-        _mediaPreviewService = mediaPreviewService;
-        _appSettingsService = appSettingsService;
-        _conversionManager = conversionManager;
+        _videoPreviewService = videoPreviewService;
+        _appConfigService = appConfigService;
+        _videoPoolManager = videoPoolManager;
         _previewVideoPlayerState = previewVideoPlayerState;
         //Video = _conversionManager.GetPlaceholderVideo();
         SetEventListeners();
@@ -202,10 +202,10 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     public async Task SetPreviewedVideo(IConvertableVideo? video)
     {
         if (video == null)
-            video = _conversionManager.GetPlaceholderVideo();
+            video = _videoPoolManager.GetPlaceholderVideo();
         
         IImage? thumb = null;
-        var thumbBytes = _mediaPreviewService.GetCachedThumbnail(video.MediaInfo);
+        var thumbBytes = _videoPreviewService.GetCachedThumbnail(video.InputVideoInfo);
         if (thumbBytes != null)
             thumb = thumbBytes.ToBitmap();
 
@@ -238,7 +238,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         
         KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, video, null);
 
-        if (video == null || video == _conversionManager.GetPlaceholderVideo())
+        if (video == null || video == _videoPoolManager.GetPlaceholderVideo())
             return;
 
         
@@ -249,9 +249,9 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         TransformRollValue = video.FrameRotation.Roll;
         AutoRenderOnChanges = prevAutoRenderSetting;
 
-        MaximumCropTimelineTime = video.MediaInfo.DurationInSeconds;
+        MaximumCropTimelineTime = video.InputVideoInfo.DurationInSeconds;
         TimelineCropStartTime = video.TimelineCrop.StartTimeSeconds ?? 0;
-        TimelineCropEndTime = video.TimelineCrop.EndTimeSeconds ?? video.MediaInfo.DurationInSeconds;
+        TimelineCropEndTime = video.TimelineCrop.EndTimeSeconds ?? video.InputVideoInfo.DurationInSeconds;
 
         ResetPreviewFov();
         ResetPreviewPitch();
@@ -301,7 +301,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         var myCts = new CancellationTokenSource();
         _snapshotGenerationCts = myCts;
         
-        var frameCount = (int)_appSettingsService.GetSettings().Previews.NumberOfSnapshotFrames;
+        var frameCount = (int)_appConfigService.GetConfig().Previews.NumberOfSnapshotFrames;
         
         
         try
@@ -310,7 +310,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
             {
                 Rotation = Video.FrameRotation
             };
-            var bitmapBytes = await _mediaPreviewService.GenerateSnapshotFramesAsync(Video.MediaInfo,
+            var bitmapBytes = await _videoPreviewService.GenerateSnapshotFramesAsync(Video.InputVideoInfo,
                 transformationSettings, frameCount, (progress) => SnapshotRenderProgress = progress, myCts.Token);
 
             var bitmaps = new IImage[bitmapBytes.Count];
@@ -395,7 +395,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
 
         Video.TimelineCrop = new TimelineCrop();
         TimelineCropStartTime = 0;
-        TimelineCropEndTime = Video.MediaInfo.DurationInSeconds;
+        TimelineCropEndTime = Video.InputVideoInfo.DurationInSeconds;
        
     }
 
@@ -422,7 +422,7 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     {
         try
         {
-            var keyFrameVideo = await _mediaPreviewService.GenerateKeyFrameVideoAsync(Video,
+            var keyFrameVideo = await _videoPreviewService.GenerateKeyFrameVideoAsync(Video,
                 (progress) => KeyFrameVideoRenderProgress = progress, CancellationToken.None);
             
             KeyFrameVideoPlayerViewModel = new VideoPlayerViewModel(_previewVideoPlayerState, Video, keyFrameVideo);

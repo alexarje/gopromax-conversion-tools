@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using VideoConversionApp.Abstractions;
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -38,6 +40,16 @@ public abstract class ConfigElementBase<T>(AppConfig parent, T yamlModel, string
     protected AppConfig Parent = parent;
     protected string Path { get; set; } = path;
 
+    protected void SetAndRaise<TProperty>(ref TProperty field, TProperty value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<TProperty>.Default.Equals(field, value))
+        {
+            return;
+        }
+        field = value;
+        RaiseEvent(propertyName, value);
+    }
+    
     protected void RaiseEvent(string propertyName, object newValue)
     {
         Parent.RaisePropertyChanged(new ConfigChangedEventArgs()
@@ -91,31 +103,19 @@ public class AppConfig : ConfigElementBase<AppConfigYamlModel>, IAppConfigModel
     public IConfigPaths Paths
     {
         get => field;
-        private set
-        {
-            field = value;
-            RaiseEvent(nameof(Paths), value);
-        }
+        private set => SetAndRaise(ref field, value);
     }
     
     public IConfigPreviews Previews
     {
         get => field;
-        private set
-        {
-            field = value;
-            RaiseEvent(nameof(Previews), value);
-        }
+        private set => SetAndRaise(ref field, value);
     }
     
     public IConfigConversion Conversion
     {
         get => field;
-        private set
-        {
-            field = value;
-            RaiseEvent(nameof(Conversion), value);
-        }
+        private set => SetAndRaise(ref field, value);
     }
 }
 
@@ -134,6 +134,7 @@ public class ConfigPaths : ConfigElementBase<ConfigPathsYamlModel>, IConfigPaths
         get => YamlModel.Exiftool;
         set
         {
+            if (value == YamlModel.Exiftool) return;
             YamlModel.Exiftool = value;
             RaiseEvent(nameof(Exiftool), value);
         }
@@ -144,6 +145,7 @@ public class ConfigPaths : ConfigElementBase<ConfigPathsYamlModel>, IConfigPaths
         get => YamlModel.Ffmpeg;
         set
         {
+            if (value == YamlModel.Ffmpeg) return;
             YamlModel.Ffmpeg = value;
             RaiseEvent(nameof(Ffmpeg), value);
         }
@@ -154,6 +156,7 @@ public class ConfigPaths : ConfigElementBase<ConfigPathsYamlModel>, IConfigPaths
         get => YamlModel.Ffprobe;
         set
         {
+            if (value == YamlModel.Ffprobe) return;
             YamlModel.Ffprobe = value;
             RaiseEvent(nameof(Ffprobe), value);
         }
@@ -175,6 +178,7 @@ public class ConfigPreviews : ConfigElementBase<ConfigPreviewsYamlModel>, IConfi
         get => YamlModel.NumberOfSnapshotFrames;
         set
         {
+            if (value == YamlModel.NumberOfSnapshotFrames) return;
             YamlModel.NumberOfSnapshotFrames = value;
             RaiseEvent(nameof(NumberOfSnapshotFrames), value);
         }
@@ -185,6 +189,7 @@ public class ConfigPreviews : ConfigElementBase<ConfigPreviewsYamlModel>, IConfi
         get => YamlModel.NumberOfThumbnailThreads;
         set
         {
+            if (value == YamlModel.NumberOfThumbnailThreads) return;
             YamlModel.NumberOfThumbnailThreads = value;
             RaiseEvent(nameof(NumberOfThumbnailThreads), value);
         }
@@ -195,6 +200,7 @@ public class ConfigPreviews : ConfigElementBase<ConfigPreviewsYamlModel>, IConfi
         get => YamlModel.ThumbnailTimePositionPcnt;
         set
         {
+            if (value == YamlModel.ThumbnailTimePositionPcnt) return;
             YamlModel.ThumbnailTimePositionPcnt = value;
             RaiseEvent(nameof(ThumbnailTimePositionPcnt), value);
         }
@@ -216,6 +222,7 @@ public class ConfigConversion : ConfigElementBase<ConfigConversionYamlModel>, IC
         get => YamlModel.CodecAudio;
         set
         {
+            if (value == YamlModel.CodecAudio) return;
             YamlModel.CodecAudio = value;
             RaiseEvent(nameof(CodecAudio), value);
         }
@@ -226,6 +233,7 @@ public class ConfigConversion : ConfigElementBase<ConfigConversionYamlModel>, IC
         get => YamlModel.CodecVideo;
         set
         {
+            if (value == YamlModel.CodecVideo) return;
             YamlModel.CodecVideo = value;
             RaiseEvent(nameof(CodecVideo), value);
         }
@@ -236,6 +244,7 @@ public class ConfigConversion : ConfigElementBase<ConfigConversionYamlModel>, IC
         get => YamlModel.OutputAudio;
         set
         {
+            if (value == YamlModel.OutputAudio) return;
             YamlModel.OutputAudio = value;
             RaiseEvent(nameof(OutputAudio), value);
         }
@@ -246,6 +255,7 @@ public class ConfigConversion : ConfigElementBase<ConfigConversionYamlModel>, IC
         get => YamlModel.OutputBesideOriginals;
         set
         {
+            if (value == YamlModel.OutputBesideOriginals) return;
             YamlModel.OutputBesideOriginals = value;
             RaiseEvent(nameof(OutputBesideOriginals), value);
         }
@@ -256,6 +266,7 @@ public class ConfigConversion : ConfigElementBase<ConfigConversionYamlModel>, IC
         get => YamlModel.OutputDirectory;
         set
         {
+            if (value == YamlModel.OutputDirectory) return;
             YamlModel.OutputDirectory = value;
             RaiseEvent(nameof(OutputDirectory), value);
         }
@@ -266,6 +277,7 @@ public class ConfigConversion : ConfigElementBase<ConfigConversionYamlModel>, IC
         get => YamlModel.OutputFilenamePattern;
         set
         {
+            if (value == YamlModel.OutputFilenamePattern) return;
             YamlModel.OutputFilenamePattern = value;
             RaiseEvent(nameof(OutputFilenamePattern), value);
         }

@@ -8,18 +8,16 @@ namespace VideoConversionApp.Abstractions;
 /// Manager of the conversion process pipeline.
 /// Contains the methods to control the conversion queue.
 /// </summary>
-public interface IConversionManager
+public interface IVideoPoolManager 
 {
     event EventHandler<IConvertableVideo>? VideoAddedToPool;
     event EventHandler<IConvertableVideo>? VideoRemovedFromPool;
 
-    IReadOnlyList<IConvertableVideo> ConversionCandidates { get; }
+    IReadOnlyList<IConvertableVideo> VideoPool { get; }
     
     IConvertableVideo GetPlaceholderVideo();
     IConvertableVideo GetDummyVideo();
-    IConvertableVideo AddVideoToPool(IMediaInfo mediaInfo);
+    IConvertableVideo AddVideoToPool(IInputVideoInfo inputVideoInfo);
     void RemoveVideoFromPool(IConvertableVideo video);
-    ConversionSettings GetConversionSettings();
-    void SetConversionSettings(ConversionSettings settings);
-    string GetFilenameFromPattern(IMediaInfo mediaInfo, TimelineCrop crop, string pattern);
+    //string GetFilenameFromPattern(IInputVideoInfo inputVideoInfo, TimelineCrop crop, string pattern);
 }

@@ -13,12 +13,12 @@ public static class ServiceCollectionExtensions
         
         collection.AddSingleton<IStorageDialogProvider, StorageDialogProvider>();
         
-        collection.AddSingleton<IMediaInfoService, MediaInfoService>();
-        collection.AddSingleton<IMediaPreviewService, MediaPreviewService>();
-        collection.AddSingleton<IAppSettingsService, AppSettingsService>();
-        collection.AddSingleton<IConversionManager, ConversionManager>();
+        collection.AddSingleton<IVideoInfoService, VideoInfoService>();
+        collection.AddSingleton<IVideoPreviewService, VideoPreviewService>();
+        collection.AddSingleton<IAppConfigService, AppConfigService>();
+        collection.AddSingleton<IVideoPoolManager, VideoPoolManager>();
         collection.AddSingleton<IAvFilterFactory, AvFilterFactory>();
-        collection.AddSingleton<IMediaConverterService, MediaConverterService>();
+        collection.AddSingleton<IVideoConverterService, VideoConverterService>();
         
         collection.AddSingleton<PreviewVideoPlayerState>();
         

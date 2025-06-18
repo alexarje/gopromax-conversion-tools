@@ -1,5 +1,9 @@
 namespace VideoConversionApp.Abstractions;
 
+/// <summary>
+/// Application configuration, including the conversion settings that are
+/// saved across sessions.
+/// </summary>
 public interface IAppConfigModel
 {
     /// <summary>
@@ -58,12 +62,12 @@ public interface IConfigPreviews
 public interface IConfigConversion
 {
     /// <summary>
-    /// Default (saved) audio codec used in conversion.
+    /// Audio codec used in conversion.
     /// </summary>
     public string CodecAudio { get; set; }
     
     /// <summary>
-    /// Default (saved) video codec used in conversion.
+    /// Video codec used in conversion.
     /// </summary>
     public string CodecVideo { get; set; }
     

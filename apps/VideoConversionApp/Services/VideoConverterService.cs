@@ -1,21 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Services;
 
-public class MediaConverterService : IMediaConverterService
+public class VideoConverterService : IVideoConverterService
 {
-    private readonly IAppSettingsService _appSettingsService;
+    private readonly IAppConfigService _appConfigService;
     private List<CodecEntry>? _ffmpegEncodingVideoCodecs;
     private List<CodecEntry>? _ffmpegEncodingAudioCodecs;
     
-    public MediaConverterService(IAppSettingsService appSettingsService)
+    public VideoConverterService(IAppConfigService appConfigService)
     {
-        _appSettingsService = appSettingsService;
+        _appConfigService = appConfigService;
     }
 
     private void PopulateValidCodecs()
@@ -23,7 +24,7 @@ public class MediaConverterService : IMediaConverterService
         var audioCodecs = new List<CodecEntry>();
         var videoCodecs = new List<CodecEntry>();
         
-        var appSettings = _appSettingsService.GetSettings();
+        var appSettings = _appConfigService.GetConfig();
         var codecParseRegex = new Regex(
             @"^\s(?<decode>[D\.])(?<encode>[E\.])(?<type>[VASDT\.])([I\.])(?<lossy>[L\.])(?<lossless>[S\.])\s(?<name>\w*)\s*(?<desc>.*)$");
         
@@ -100,5 +101,38 @@ public class MediaConverterService : IMediaConverterService
         if (_ffmpegEncodingVideoCodecs == null)
             PopulateValidCodecs();
         return _ffmpegEncodingAudioCodecs!;
+    }
+    
+    //public string GetFilenameFromPattern(IInputVideoInfo inputVideoInfo, TimelineCrop crop, string pattern)
+    public string GetFilenameFromPattern(IConvertableVideo video, string pattern)
+    {
+        var crop = video.TimelineCrop;
+        var inputVideoInfo = video.InputVideoInfo;
+        
+        var cropElems = new List<string>();
+        if (crop.StartTimeSeconds != null && crop.StartTimeSeconds > 0)
+        {
+            var startTime = crop.StartTimeSeconds;
+            var endTime = crop.EndTimeSeconds ?? inputVideoInfo.DurationInSeconds;
+            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
+            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
+        }
+        else if (crop.EndTimeSeconds != null && crop.EndTimeSeconds > 0)
+        {
+            var startTime = crop.StartTimeSeconds ?? 0;
+            var endTime = crop.EndTimeSeconds;
+            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
+            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
+        }
+        // e.g. 00-01-22.332__00-02-44.692
+        var cropString = string.Join("__", cropElems);
+
+        var fn = Path.GetFileNameWithoutExtension(inputVideoInfo.Filename);
+        var output = pattern.Replace("%o", fn)
+            .Replace("%c", cropString)
+            .Replace("%d", inputVideoInfo.CreatedDateTime.ToString("yyyy-MM-ddTHH-mm-ss"));
+            
+        return output;
+        
     }
 }

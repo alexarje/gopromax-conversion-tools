@@ -2,13 +2,13 @@
 
 namespace VideoConversionApp.Tests;
 
-public class MediaInfoServiceTests
+public class VideoInfoServiceTests
 {
     [Fact]
     public async Task TestGetMediaInfo()
     {
         var mediaFile = "/drive/data/Media/VideoEditing/ProjectDirs/Snouk Season 24-25/GS010176.360";
-        var service = new MediaInfoService();
+        var service = new VideoInfoService();
         
         var info = await service.ParseMediaAsync(mediaFile);
         

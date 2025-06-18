@@ -11,33 +11,55 @@ namespace VideoConversionApp.ViewModels;
 
 public partial class RenderQueueViewModel : ViewModelBase
 {
-    private readonly IMediaConverterService _converterService;
-    private readonly IConversionManager _conversionManager;
+    private readonly IVideoConverterService _converterService;
+    private readonly IVideoPoolManager _videoPoolManager;
+    private readonly IAppConfigService _appConfigService;
     public SortableObservableCollection<VideoRenderQueueEntry> RenderQueue { get; } = new ();
     
-    public IConversionManager ConversionManager => _conversionManager; 
+    public IVideoPoolManager VideoPoolManager => _videoPoolManager; 
+    public IVideoConverterService ConverterService => _converterService;
 
     [ObservableProperty] 
     public partial bool ShowExpandedView { get; set; } = true;
     
+    [ObservableProperty]
+    public partial string NamingPattern { get; set; } = "%o-%c";
     
-    public RenderQueueViewModel(IMediaConverterService converterService, IConversionManager conversionManager)
+    
+    public RenderQueueViewModel(IVideoConverterService converterService, 
+        IVideoPoolManager videoPoolManager,
+        IAppConfigService appConfigService)
     {
         if (Design.IsDesignMode)
         {
-            _conversionManager = new ConversionManager(null);
-            RenderQueue.Add(new VideoRenderQueueEntry(_conversionManager.GetDummyVideo()));
+            _videoPoolManager = new VideoPoolManager(null);
+            RenderQueue.Add(new VideoRenderQueueEntry(_videoPoolManager.GetDummyVideo()));
             return;
         }
         
         _converterService = converterService;
-        _conversionManager = conversionManager;
+        _videoPoolManager = videoPoolManager;
+        _appConfigService = appConfigService;
+
+        _videoPoolManager.VideoAddedToPool += VideoPoolManagerOnVideoAddedToPool;
+        _videoPoolManager.VideoRemovedFromPool += VideoPoolManagerOnVideoRemovedFromPool;
         
-        _conversionManager.VideoAddedToPool += ConversionManagerOnVideoAddedToPool;
-        _conversionManager.VideoRemovedFromPool += ConversionManagerOnVideoRemovedFromPool;
+        //_videoPoolManager.GetConversionSettings().OutputFilenamePatternChanged += OnOutputFilenamePatternChanged;
+        _appConfigService.GetConfig().PropertyChanged += OnConfigPropertyChanged;
     }
 
-    private void ConversionManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
+    private void OnConfigPropertyChanged(object? sender, ConfigChangedEventArgs e)
+    {
+        if (e.PropertyPath == $"{nameof(IAppConfigModel.Conversion)}.{nameof(IConfigConversion.OutputFilenamePattern)}")
+            NamingPattern = ((string)e.NewValue)!;
+    }
+
+    // private void OnOutputFilenamePatternChanged(object? sender, string pattern)
+    // {
+    //     NamingPattern = pattern;
+    // }
+
+    private void VideoPoolManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
     {
         video.IsEnabledForConversionUpdated -= VideoOnIsEnabledForConversionUpdated;
         var queuedVideo = RenderQueue.FirstOrDefault(entry => entry.Video == video);
@@ -45,7 +67,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             RenderQueue.Remove(queuedVideo);
     }
 
-    private void ConversionManagerOnVideoAddedToPool(object? sender, IConvertableVideo video)
+    private void VideoPoolManagerOnVideoAddedToPool(object? sender, IConvertableVideo video)
     {
         video.IsEnabledForConversionUpdated -= VideoOnIsEnabledForConversionUpdated;
         video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
@@ -66,7 +88,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public void SyncRenderQueue()
     {
-        var selectedForConversion = _conversionManager.ConversionCandidates
+        var selectedForConversion = _videoPoolManager.VideoPool
             .Where(video => video.IsEnabledForConversion)
             .ToList();
         

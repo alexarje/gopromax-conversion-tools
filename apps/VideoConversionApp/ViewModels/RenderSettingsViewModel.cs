@@ -14,9 +14,10 @@ namespace VideoConversionApp.ViewModels;
 
 public partial class RenderSettingsViewModel : ViewModelBase
 {
-    private readonly IConversionManager _conversionManager;
-    private readonly IMediaConverterService _converterService;
+    private readonly IVideoPoolManager _videoPoolManager;
+    private readonly IVideoConverterService _converterService;
     private readonly IStorageDialogProvider _storageDialogProvider;
+    private readonly IAppConfigService _appConfigService;
 
     [ObservableProperty]
     public partial string SelectedOutputDirectoryMethod { get; set; }
@@ -49,25 +50,29 @@ public partial class RenderSettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<CodecEntry>? VideoCodecs { get; set; }
 
-    public RenderSettingsViewModel(IConversionManager conversionManager,
-        IMediaConverterService converterService,
-        IStorageDialogProvider storageDialogProvider)
+    public RenderSettingsViewModel(IVideoPoolManager videoPoolManager,
+        IVideoConverterService converterService,
+        IStorageDialogProvider storageDialogProvider,
+        IAppConfigService appConfigService)
     {
-        _conversionManager = conversionManager;
+        _videoPoolManager = videoPoolManager;
         _converterService = converterService;
         _storageDialogProvider = storageDialogProvider;
+        _appConfigService = appConfigService;
     }
 
     partial void OnSelectedOutputDirectoryMethodChanged(string value)
     {
         IsOutputToSelectedDirSelected = value == "OutputToSelectedDir";
-        _conversionManager.GetConversionSettings().OutputBesideOriginals = !IsOutputToSelectedDirSelected;
+        _appConfigService.GetConfig().Conversion.OutputBesideOriginals = !IsOutputToSelectedDirSelected;
+        //_videoPoolManager.GetConversionSettings().OutputBesideOriginals = !IsOutputToSelectedDirSelected;
     }
 
     partial void OnSelectedOutputDirectoryChanged(string value)
     {
         var exists = Directory.Exists(value);
         SelectedOutputDirectoryIssues = exists ? string.Empty : "Directory does not exist";
+        _appConfigService.GetConfig().Conversion.OutputDirectory = value;
     }
 
     
@@ -78,7 +83,8 @@ public partial class RenderSettingsViewModel : ViewModelBase
         if (IsOtherVideoCodecSelected && VideoCodecs == null)
             RefreshCodecLists();
         
-        _conversionManager.GetConversionSettings().VideoCodecinFfmpeg = value switch
+        //_videoPoolManager.GetConversionSettings().VideoCodecinFfmpeg = value switch
+        _appConfigService.GetConfig().Conversion.CodecVideo = value switch
         {
             "VcProres" => "prores",
             "VcDnxhd" => "dnxhd",
@@ -93,35 +99,39 @@ public partial class RenderSettingsViewModel : ViewModelBase
         if (IsOtherAudioCodecSelected && AudioCodecs == null)
             RefreshCodecLists();
         
-        _conversionManager.GetConversionSettings().AudioCodecinFfmpeg = value switch
+        //_videoPoolManager.GetConversionSettings().AudioCodecinFfmpeg = value switch
+        _appConfigService.GetConfig().Conversion.CodecAudio = value switch
         {
             "AcPcms16le" => "prores",
             "AcPcms32le" => "dnxhd",
             "AcNone" => "",
             _ => CustomVideoCodecName
         };
-        if (value == "AcNone")
-            _conversionManager.GetConversionSettings().OutputAudio = false;
+        _appConfigService.GetConfig().Conversion.OutputAudio = value != "AcNone";
+        //_videoPoolManager.GetConversionSettings().OutputAudio = false;
     }
 
     partial void OnCustomVideoCodecNameChanged(string value)
     {
         if (IsOtherVideoCodecSelected)
-            _conversionManager.GetConversionSettings().VideoCodecinFfmpeg = value;
+            _appConfigService.GetConfig().Conversion.CodecVideo = value;
+            //_videoPoolManager.GetConversionSettings().VideoCodecinFfmpeg = value;
     }
 
     partial void OnCustomAudioCodecNameChanged(string value)
     {
         if (IsOtherAudioCodecSelected)
-            _conversionManager.GetConversionSettings().AudioCodecinFfmpeg = value;
+            _appConfigService.GetConfig().Conversion.CodecAudio = value;
+            //_videoPoolManager.GetConversionSettings().AudioCodecinFfmpeg = value;
     }
 
     partial void OnFilenamePatternChanged(string value)
     {
-        var dummyVideo = _conversionManager.GetDummyVideo();
-        FilenamePreview = _conversionManager.GetFilenameFromPattern(
-            dummyVideo.MediaInfo, dummyVideo.TimelineCrop, value);
-        _conversionManager.GetConversionSettings().OutputFilenamePattern = value;
+        var dummyVideo = _videoPoolManager.GetDummyVideo();
+        FilenamePreview = _converterService.GetFilenameFromPattern(dummyVideo, value);
+        
+        _appConfigService.GetConfig().Conversion.OutputFilenamePattern = value;
+        //_videoPoolManager.GetConversionSettings().OutputFilenamePattern = value;
 
         FilenamePatternIssues = string.IsNullOrWhiteSpace(FilenamePattern) ? "Filename pattern is empty" : "";
     }
@@ -137,11 +147,11 @@ public partial class RenderSettingsViewModel : ViewModelBase
     {
         //var appSettings = _appSettingsService.GetSettings();
         
-        var firstInputVideo = _conversionManager.ConversionCandidates.FirstOrDefault();
+        var firstInputVideo = _videoPoolManager.VideoPool.FirstOrDefault();
         var suggestedStartLocation = !string.IsNullOrEmpty(SelectedOutputDirectory) && Directory.Exists(SelectedOutputDirectory)
             ? SelectedOutputDirectory
             : firstInputVideo != null
-                ? Path.GetDirectoryName(firstInputVideo.MediaInfo.Filename)
+                ? Path.GetDirectoryName(firstInputVideo.InputVideoInfo.Filename)
                 : null;
 
         var storageProvider = _storageDialogProvider!.GetStorageProvider();

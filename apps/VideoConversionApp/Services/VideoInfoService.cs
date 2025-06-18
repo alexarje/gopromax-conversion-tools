@@ -10,9 +10,9 @@ using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Services;
 
-public class MediaInfoService : IMediaInfoService
+public class VideoInfoService : IVideoInfoService
 {
-    private class MediaInfo : IMediaInfo
+    private class InputVideoInfo : IInputVideoInfo
     {
         public string Filename { get; }
         public bool IsValidVideo { get; }
@@ -22,7 +22,7 @@ public class MediaInfoService : IMediaInfoService
         public long SizeBytes { get; }
         public string[]? ValidationIssues { get; }
         
-        public MediaInfo(string filename, bool isValidVideo, bool isGoProMaxFormat, 
+        public InputVideoInfo(string filename, bool isValidVideo, bool isGoProMaxFormat, 
             long durationMilliseconds, DateTime createdDateTime, long sizeBytes, string[]? validationIssues)
         {
             Filename = filename;
@@ -37,7 +37,7 @@ public class MediaInfoService : IMediaInfoService
     
     private static LibVLC? _libVlc = null;
     
-    public async Task<IMediaInfo> ParseMediaAsync(string filename)
+    public async Task<IInputVideoInfo> ParseMediaAsync(string filename)
     {
         if (!File.Exists(filename))
         {
@@ -61,7 +61,7 @@ public class MediaInfoService : IMediaInfoService
         await media.Parse(MediaParseOptions.ParseLocal, 2000);
 
         if (media.Duration < 0)
-            return new MediaInfo(filename, false, false, 0, 
+            return new InputVideoInfo(filename, false, false, 0, 
                 defaultVideoCreateTime, sizeBytes, ["Media duration was reported as < 0"]);
 
         var validationIssues = new List<string>(); 
@@ -70,7 +70,7 @@ public class MediaInfoService : IMediaInfoService
         var dateString = media.Meta(MetadataType.Date) ?? defaultVideoCreateTime.ToString(CultureInfo.CurrentCulture);
         var videoCreateTime = DateTime.Parse(dateString);
         
-        return new MediaInfo(filename, true, isGoProMaxFormat, media.Duration, videoCreateTime, 
+        return new InputVideoInfo(filename, true, isGoProMaxFormat, media.Duration, videoCreateTime, 
             sizeBytes, validationIssues.ToArray());
 
     }

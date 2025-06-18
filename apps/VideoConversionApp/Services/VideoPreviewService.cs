@@ -15,7 +15,7 @@ using File = System.IO.File;
 
 namespace VideoConversionApp.Services;
 
-public class MediaPreviewService : IMediaPreviewService
+public class VideoPreviewService : IVideoPreviewService
 {
     /// <summary>
     /// A job class for our queues.
@@ -29,19 +29,19 @@ public class MediaPreviewService : IMediaPreviewService
         public CancellationToken CancellationToken;
     }
 
-    private IAppSettingsService _appSettingsService;
+    private IAppConfigService _appConfigService;
     private readonly IAvFilterFactory _avFilterFactory;
     private List<Thread> _thumbnailQueueProcessingThreads = new();
     private ConcurrentDictionary<string, byte[]> _thumbnailCache = new();
 
-    private ConcurrentQueue<ThreadWorkItem<(IMediaInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> 
+    private ConcurrentQueue<ThreadWorkItem<(IInputVideoInfo mediaInfo, long timePosMs), TaskCompletionSource<byte[]?>>> 
         _thumbnailGenerationQueue = new();
 
     
-    public MediaPreviewService(IAppSettingsService appSettingsService,
+    public VideoPreviewService(IAppConfigService appConfigService,
         IAvFilterFactory avFilterFactory)
     {
-        _appSettingsService = appSettingsService;
+        _appConfigService = appConfigService;
         _avFilterFactory = avFilterFactory;
 
         CachePlaceholderThumbnail();
@@ -52,14 +52,14 @@ public class MediaPreviewService : IMediaPreviewService
         using var defaultThumb = AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/placeholder_snapframe.png"));
         var buffer = new byte[defaultThumb.Length];
         defaultThumb.ReadExactly(buffer, 0, buffer.Length);
-        _thumbnailCache.TryAdd(IMediaInfo.PlaceHolderFilename, buffer);
+        _thumbnailCache.TryAdd(IInputVideoInfo.PlaceHolderFilename, buffer);
     }
     
-    public Task<byte[]?> QueueThumbnailGenerationAsync(IMediaInfo media, long timePositionMilliseconds)
+    public Task<byte[]?> QueueThumbnailGenerationAsync(IInputVideoInfo inputVideo, long timePositionMilliseconds)
     {
-        var threadWorkItem = new ThreadWorkItem<(IMediaInfo, long), TaskCompletionSource<byte[]?>>
+        var threadWorkItem = new ThreadWorkItem<(IInputVideoInfo, long), TaskCompletionSource<byte[]?>>
         {
-            WorkItem = (media, timePositionMilliseconds),
+            WorkItem = (inputVideo, timePositionMilliseconds),
             Result = new TaskCompletionSource<byte[]?>(),
             CancellationToken = CancellationToken.None
         };
@@ -74,7 +74,7 @@ public class MediaPreviewService : IMediaPreviewService
     /// </summary>
     private void RunThumbnailProcessingThreads()
     {
-        var threadCount = _appSettingsService.GetSettings().Previews.NumberOfThumbnailThreads;
+        var threadCount = _appConfigService.GetConfig().Previews.NumberOfThumbnailThreads;
         lock (_thumbnailQueueProcessingThreads)
         {
             for (var i = _thumbnailQueueProcessingThreads.Count - 1; i >= 0; i--)
@@ -98,7 +98,7 @@ public class MediaPreviewService : IMediaPreviewService
     /// </summary>
     private void ProcessThumbnailQueue()
     {
-        var appSettings = _appSettingsService.GetSettings();
+        var appSettings = _appConfigService.GetConfig();
         
         var avFilterString = _avFilterFactory.BuildAvFilter(
             new AvFilterFrameSelectCondition() { KeyFramesOnly = true }, AvFilterFrameRotation.Zero);
@@ -159,7 +159,7 @@ public class MediaPreviewService : IMediaPreviewService
             
     }
 
-    public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(IMediaInfo media, 
+    public async Task<IList<byte[]>> GenerateSnapshotFramesAsync(IInputVideoInfo inputVideo, 
         SnapshotFrameTransformationSettings settings, int numberOfFrames, 
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
@@ -167,8 +167,8 @@ public class MediaPreviewService : IMediaPreviewService
         if (numberOfFrames < 2)
             throw new ArgumentException("Number of frames must be at least 2");
      
-        var appSettings = _appSettingsService.GetSettings();
-        var skipLength = media.DurationInSeconds / (numberOfFrames - 1);
+        var appSettings = _appConfigService.GetConfig();
+        var skipLength = inputVideo.DurationInSeconds / (numberOfFrames - 1);
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
         {
@@ -192,7 +192,7 @@ public class MediaPreviewService : IMediaPreviewService
                 "-stats_period", "0.25",
                 "-vsync", "0",
                 "-filter_complex", avFilterString,
-                "-i", media.Filename,
+                "-i", inputVideo.Filename,
                 "-map", "[OUTPUT_FRAME]",
                 "-f", "image2",
                 "-s", "672x398",
@@ -272,9 +272,9 @@ public class MediaPreviewService : IMediaPreviewService
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
-        var mediaInfo = video.MediaInfo;
+        var mediaInfo = video.InputVideoInfo;
         var rotation = video.FrameRotation;
-        var appSettings = _appSettingsService.GetSettings();
+        var appSettings = _appConfigService.GetConfig();
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
         {
@@ -398,9 +398,9 @@ public class MediaPreviewService : IMediaPreviewService
         
     }
 
-    public byte[]? GetCachedThumbnail(IMediaInfo media)
+    public byte[]? GetCachedThumbnail(IInputVideoInfo inputVideo)
     {
-        return _thumbnailCache.GetValueOrDefault(media.Filename);
+        return _thumbnailCache.GetValueOrDefault(inputVideo.Filename);
     }
 
     public byte[]? GetCachedThumbnail(string videoFilename)

@@ -86,14 +86,14 @@ public partial class VideoPlayerView : UserControl, IDisposable
                 _mediaPlayer.Media.Dispose();
 
             SetEventListeners();
-            var enableControls = vm.SourceVideo != null && !IMediaInfo.IsPlaceholderFile(vm.SourceVideo.MediaInfo.Filename);
+            var enableControls = vm.SourceVideo != null && !IInputVideoInfo.IsPlaceholderFile(vm.SourceVideo.InputVideoInfo.Filename);
             vm.PlayerState.SetControlsEnabled(enableControls, this);
 
             if (vm.VideoUri != null)
             {
                 // Duration is not available until we play, but we have that information
                 // in the KeyFrameVideo class.
-                Scrubber.Maximum = (double)vm.KeyFrameVideo.SourceVideo.MediaInfo.DurationInSeconds;
+                Scrubber.Maximum = (double)vm.KeyFrameVideo.SourceVideo.InputVideoInfo.DurationInSeconds;
                 
                 var media = new Media(_libVlc, vm.VideoUri);
                 _mediaPlayer.Media = media;
@@ -360,7 +360,7 @@ public partial class VideoPlayerView : UserControl, IDisposable
     
     private void CalculateAndSetCropMarkerPositions(decimal cropStart, decimal cropEnd)
     {
-        var timeLineLength = ViewModel?.SourceVideo?.MediaInfo.DurationInSeconds ?? 1;
+        var timeLineLength = ViewModel?.SourceVideo?.InputVideoInfo.DurationInSeconds ?? 1;
         if (timeLineLength <= 0)
             timeLineLength = 1;
         var startMarkerPos = (double)cropStart / (double)timeLineLength * CropTimelineCanvas.Bounds.Width;

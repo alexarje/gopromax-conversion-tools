@@ -18,9 +18,9 @@ public class TimelineCropAsStringConverter : IValueConverter
         if (value is IConvertableVideo video)
         {
             if (parameter is bool durationOnly || parameter is string durationOnlyString && durationOnlyString == "true")
-                return StringifyDuration(video.MediaInfo, video.TimelineCrop);
+                return StringifyDuration(video.InputVideoInfo, video.TimelineCrop);
             else
-                return StringifyStartEnd(video.MediaInfo, video.TimelineCrop);
+                return StringifyStartEnd(video.InputVideoInfo, video.TimelineCrop);
         }
 
         return "";
@@ -31,21 +31,21 @@ public class TimelineCropAsStringConverter : IValueConverter
         return BindingOperations.DoNothing;
     }
 
-    public string StringifyDuration(IMediaInfo mediaInfo, TimelineCrop crop)
+    public string StringifyDuration(IInputVideoInfo inputVideoInfo, TimelineCrop crop)
     {
         var startTime = crop.StartTimeSeconds ?? 0;
-        var endTime = crop.EndTimeSeconds ?? mediaInfo.DurationInSeconds;
+        var endTime = crop.EndTimeSeconds ?? inputVideoInfo.DurationInSeconds;
         var span = TimeSpan.FromSeconds((double)(endTime - startTime));
         return span.ToString("hh\\:mm\\:ss");
     }
     
-    public string StringifyStartEnd(IMediaInfo mediaInfo, TimelineCrop crop)
+    public string StringifyStartEnd(IInputVideoInfo inputVideoInfo, TimelineCrop crop)
     {
         var cropElems = new List<string>();
         if (crop.StartTimeSeconds != null && crop.StartTimeSeconds > 0)
         {
             var startTime = crop.StartTimeSeconds;
-            var endTime = crop.EndTimeSeconds ?? mediaInfo.DurationInSeconds;
+            var endTime = crop.EndTimeSeconds ?? inputVideoInfo.DurationInSeconds;
             cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\:mm\\:ss"));
             cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\:mm\\:ss"));
         }

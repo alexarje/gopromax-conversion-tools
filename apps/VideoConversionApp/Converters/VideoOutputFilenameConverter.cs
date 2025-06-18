@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
@@ -6,24 +7,20 @@ using VideoConversionApp.Abstractions;
 
 namespace VideoConversionApp.Converters;
 
-public class VideoOutputFilenameConverter : IValueConverter
+public class VideoOutputFilenameConverter : IMultiValueConverter
 {
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value == null)
-            return false;
-
-        if (value is IConvertableVideo video && parameter is IConversionManager conversionManager)
+        if (values.Count == 3)
         {
-            return conversionManager.GetFilenameFromPattern(video.MediaInfo, video.TimelineCrop, "%o-%c"); // TODO
+            var video = values[0] as IConvertableVideo;
+            var mediaConverterService = values[1] as IVideoConverterService;
+            var pattern = values[2] as string;
+            
+            if(video != null && mediaConverterService != null && pattern != null)
+                return mediaConverterService.GetFilenameFromPattern(video, pattern);
         }
 
         return "";
-
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        return BindingOperations.DoNothing;
     }
 }

@@ -9,7 +9,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace VideoConversionApp.Services;
 
-public class AppSettingsService : IAppSettingsService
+public class AppConfigService : IAppConfigService
 {
     private AppConfig? _appConfiguration;
 
@@ -28,7 +28,7 @@ public class AppSettingsService : IAppSettingsService
         }
     }
 
-    public void LoadSettings()
+    public void LoadConfig()
     {
         try
         {
@@ -36,7 +36,7 @@ public class AppSettingsService : IAppSettingsService
             {
                 var yamlConfig = new AppConfigYamlModel();
                 _appConfiguration = new AppConfig(yamlConfig);
-                SaveSettings();
+                SaveConfig();
                 return;
             }
 
@@ -58,7 +58,7 @@ public class AppSettingsService : IAppSettingsService
         }
     }
 
-    public void SaveSettings()
+    public void SaveConfig()
     {
         try
         {
@@ -75,7 +75,7 @@ public class AppSettingsService : IAppSettingsService
         }
     }
     
-    public AppConfig GetSettings()
+    public AppConfig GetConfig()
     {
         if (_appConfiguration == null)
             throw new Exception("No configuration loaded");

@@ -27,7 +27,6 @@
     <converters:VideoNotPlaceholderConverter x:Key="VideoNotPlaceholderConverter" />
   </UserControl.Resources>
   
-  <!-- TODO Change IsEnabled to check for something else now that we use a placeholder -->
   <DockPanel IsEnabled="{Binding Video, Converter={StaticResource VideoNotPlaceholderConverter}}">
     <Border Classes="pane-heading" DockPanel.Dock="Top">
       <Panel>

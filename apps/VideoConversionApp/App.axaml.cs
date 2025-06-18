@@ -30,8 +30,8 @@ public partial class App : Application
         var services = collection.BuildServiceProvider();
         
         // Load settings at the beginning.
-        var settings = services.GetRequiredService<IAppSettingsService>();
-        settings.LoadSettings();
+        var settings = services.GetRequiredService<IAppConfigService>();
+        settings.LoadConfig();
         
         var vm = services.GetRequiredService<MainWindowViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

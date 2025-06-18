@@ -7,12 +7,12 @@ using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Services;
 
-public class ConversionManager : IConversionManager
+public class VideoPoolManager : IVideoPoolManager
 {
     /// <summary>
-    /// Represents a video that is entered into ConversionManager and also managed by it.
+    /// Represents a video that is entered into VideoPoolManager and also managed by it.
     /// Hence, the class itself is hidden and the model is exposed just by its interface.
-    /// Instances are created by ConversionManager.
+    /// Instances are created by VideoPoolManager.
     /// </summary>
     private class ConvertableVideo : IConvertableVideo
     {
@@ -21,7 +21,7 @@ public class ConversionManager : IConversionManager
         public event EventHandler<bool>? IsEnabledForConversionUpdated;
         public event EventHandler? SettingsChanged;
 
-        public IMediaInfo MediaInfo { get; private set; }
+        public IInputVideoInfo InputVideoInfo { get; private set; }
         public AvFilterFrameRotation FrameRotation
         {
             get => field;
@@ -70,15 +70,15 @@ public class ConversionManager : IConversionManager
             {
                 var rotationChanged = FrameRotation.Pitch != 0 || FrameRotation.Yaw != 0 || FrameRotation.Roll != 0;
                 var startCropped = TimelineCrop.StartTimeSeconds != 0 && TimelineCrop.StartTimeSeconds != null;
-                var endCropped = TimelineCrop.EndTimeSeconds != MediaInfo.DurationInSeconds && TimelineCrop.EndTimeSeconds != null;
+                var endCropped = TimelineCrop.EndTimeSeconds != InputVideoInfo.DurationInSeconds && TimelineCrop.EndTimeSeconds != null;
 
                 return rotationChanged || startCropped || endCropped;
             }
         }
 
-        public ConvertableVideo(IMediaInfo mediaInfo)
+        public ConvertableVideo(IInputVideoInfo inputVideoInfo)
         {
-            MediaInfo = mediaInfo;
+            InputVideoInfo = inputVideoInfo;
             FrameRotation = AvFilterFrameRotation.Zero;
             TimelineCrop = new TimelineCrop();
         }
@@ -92,9 +92,9 @@ public class ConversionManager : IConversionManager
         }
     }
 
-    private class PlaceholderMediaInfo : IMediaInfo
+    private class PlaceholderInputVideoInfo : IInputVideoInfo
     {
-        public string Filename { get; } = IMediaInfo.PlaceHolderFilename;
+        public string Filename { get; } = IInputVideoInfo.PlaceHolderFilename;
         public bool IsValidVideo { get; } = false;
         public bool IsGoProMaxFormat { get; } = false;
         public decimal DurationInSeconds { get; } = 0;
@@ -103,7 +103,7 @@ public class ConversionManager : IConversionManager
         public string[]? ValidationIssues { get; } = null;
     }
 
-    private class PreviewDummyMediaInfo : IMediaInfo
+    private class PreviewDummyInputVideoInfo : IInputVideoInfo
     {
         public string Filename { get; } = "GS204012.360";
         public bool IsValidVideo { get; } = true;
@@ -118,19 +118,18 @@ public class ConversionManager : IConversionManager
     public event EventHandler<IConvertableVideo>? VideoAddedToPool;
     public event EventHandler<IConvertableVideo>? VideoRemovedFromPool;
     
-    private ConversionSettings? _conversionSettings;
     private List<ConvertableVideo> _convertibleVideoModels = new ();
-    public IReadOnlyList<IConvertableVideo> ConversionCandidates => _convertibleVideoModels;
+    public IReadOnlyList<IConvertableVideo> VideoPool => _convertibleVideoModels;
     
     // Placeholder video, representing "no video" in views and such.
     private readonly ConvertableVideo _placeholderVideo;
     // Dummy video, for filename previews and such.
     private readonly ConvertableVideo _dummyVideo;
     
-    public ConversionManager(IAppSettingsService appSettingsService)
+    public VideoPoolManager(IAppConfigService appConfigService)
     {
-        _placeholderVideo = new ConvertableVideo(new PlaceholderMediaInfo());
-        _dummyVideo = new ConvertableVideo(new PreviewDummyMediaInfo())
+        _placeholderVideo = new ConvertableVideo(new PlaceholderInputVideoInfo());
+        _dummyVideo = new ConvertableVideo(new PreviewDummyInputVideoInfo())
         {
             FrameRotation = new AvFilterFrameRotation(),
             TimelineCrop = new TimelineCrop()
@@ -152,9 +151,9 @@ public class ConversionManager : IConversionManager
         return _dummyVideo;
     }
 
-    public IConvertableVideo AddVideoToPool(IMediaInfo mediaInfo)
+    public IConvertableVideo AddVideoToPool(IInputVideoInfo inputVideoInfo)
     {
-        var model = new ConvertableVideo(mediaInfo);
+        var model = new ConvertableVideo(inputVideoInfo);
         _convertibleVideoModels.Add(model);
         VideoAddedToPool?.Invoke(this, model);
         return model;
@@ -170,57 +169,4 @@ public class ConversionManager : IConversionManager
         VideoRemovedFromPool?.Invoke(this, v);
     }
 
-    public ConversionSettings GetConversionSettings()
-    {
-        if (_conversionSettings == null)
-        {
-            // TODO load default conversion settings from the service...
-            
-            _conversionSettings = new ConversionSettings
-            {
-                OutputBesideOriginals = false,
-                OutputDirectory = "/tmp",
-                AudioCodecinFfmpeg = "pcm_s16le",
-                OutputAudio = true,
-                OutputFilenamePattern = "%o-%c-%d",
-                VideoCodecinFfmpeg = "prores"
-            };
-        }
-        return _conversionSettings;
-    }
-
-    public void SetConversionSettings(ConversionSettings settings)
-    {
-        _conversionSettings = settings;
-        // TODO validate settings
-    }
-
-    public string GetFilenameFromPattern(IMediaInfo mediaInfo, TimelineCrop crop, string pattern)
-    {
-        var cropElems = new List<string>();
-        if (crop.StartTimeSeconds != null && crop.StartTimeSeconds > 0)
-        {
-            var startTime = crop.StartTimeSeconds;
-            var endTime = crop.EndTimeSeconds ?? mediaInfo.DurationInSeconds;
-            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
-            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
-        }
-        else if (crop.EndTimeSeconds != null && crop.EndTimeSeconds > 0)
-        {
-            var startTime = crop.StartTimeSeconds ?? 0;
-            var endTime = crop.EndTimeSeconds;
-            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
-            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
-        }
-        // e.g. 00-01-22.332__00-02-44.692
-        var cropString = string.Join("__", cropElems);
-
-        var fn = Path.GetFileNameWithoutExtension(mediaInfo.Filename);
-        var output = pattern.Replace("%o", fn)
-            .Replace("%c", cropString)
-            .Replace("%d", mediaInfo.CreatedDateTime.ToString("yyyy-MM-ddTHH-mm-ss"));
-            
-        return output;
-        
-    }
 }

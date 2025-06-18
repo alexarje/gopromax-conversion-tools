@@ -18,11 +18,11 @@ namespace VideoConversionApp.ViewModels;
 
 public partial class MediaSelectionViewModel : ViewModelBase
 {
-    private readonly IAppSettingsService _appSettingsService;
-    private readonly IMediaInfoService _mediaInfoService;
+    private readonly IAppConfigService _appConfigService;
+    private readonly IVideoInfoService _videoInfoService;
     private readonly IStorageDialogProvider _storageDialogProvider;
-    private readonly IMediaPreviewService _mediaPreviewService;
-    private readonly IConversionManager _conversionManager;
+    private readonly IVideoPreviewService _videoPreviewService;
+    private readonly IVideoPoolManager _videoPoolManager;
     private readonly ConversionPreviewViewModel _conversionPreviewViewModel;
 
     [ObservableProperty]
@@ -50,18 +50,18 @@ public partial class MediaSelectionViewModel : ViewModelBase
     } = new SortableObservableCollection<VideoThumbViewModel>();
     
     public MediaSelectionViewModel(
-        IAppSettingsService appSettingsService,
-        IMediaInfoService mediaInfoService, 
+        IAppConfigService appConfigService,
+        IVideoInfoService videoInfoService, 
         IStorageDialogProvider storageDialogProvider,
-        IMediaPreviewService mediaPreviewService,
-        IConversionManager conversionManager,
+        IVideoPreviewService videoPreviewService,
+        IVideoPoolManager videoPoolManager,
         ConversionPreviewViewModel conversionPreviewViewModel)
     {
-        _appSettingsService = appSettingsService;
-        _mediaInfoService = mediaInfoService;
+        _appConfigService = appConfigService;
+        _videoInfoService = videoInfoService;
         _storageDialogProvider = storageDialogProvider;
-        _mediaPreviewService = mediaPreviewService;
-        _conversionManager = conversionManager;
+        _videoPreviewService = videoPreviewService;
+        _videoPoolManager = videoPoolManager;
         _conversionPreviewViewModel = conversionPreviewViewModel;
         SelectedSort = SortOptions.First();
 
@@ -72,11 +72,11 @@ public partial class MediaSelectionViewModel : ViewModelBase
             return;
         }
         
-        _conversionManager.VideoRemovedFromPool += ConversionManagerOnVideoRemovedFromPool;
+        _videoPoolManager.VideoRemovedFromPool += VideoPoolManagerOnVideoRemovedFromPool;
         
     }
 
-    private void ConversionManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
+    private void VideoPoolManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
     {
         var match = VideoList.FirstOrDefault(x => x.LinkedVideo == video);
         if (match != null)
@@ -102,7 +102,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
     [RelayCommand]
     private async Task AddFiles()
     {
-        var appSettings = _appSettingsService.GetSettings();
+        var appSettings = _appConfigService.GetConfig();
         var videoType = new FilePickerFileType("GoPro MAX .360");
         videoType.Patterns = [".360"];
 
@@ -112,18 +112,18 @@ public partial class MediaSelectionViewModel : ViewModelBase
             FileTypeFilter = [videoType]
         });
 
-        var thumbGenerationJobs = new List<(VideoThumbViewModel thumbViewModel, IMediaInfo mediaInfo)>();
+        var thumbGenerationJobs = new List<(VideoThumbViewModel thumbViewModel, IInputVideoInfo mediaInfo)>();
         foreach (var selectedFile in selectedFiles)
         {
             var fullFilename = selectedFile!.TryGetLocalPath();
             if (VideoList.Any(v => v.FullFileName == fullFilename))
                 continue;
             
-            var mediaInfo = await _mediaInfoService.ParseMediaAsync(fullFilename!);
+            var mediaInfo = await _videoInfoService.ParseMediaAsync(fullFilename!);
             IConvertableVideo? video = null;
             if (mediaInfo.IsValidVideo && mediaInfo.IsGoProMaxFormat)
             {
-                video = _conversionManager.AddVideoToPool(mediaInfo);
+                video = _videoPoolManager.AddVideoToPool(mediaInfo);
                 video.SettingsChanged += VideoOnConversionSettingsChanged;
                 video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
             }
@@ -148,7 +148,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
                 VideoList.Remove(thumbViewModel);
                 if (thumbViewModel.LinkedVideo != null)
                 {
-                    _conversionManager.RemoveVideoFromPool(thumbViewModel.LinkedVideo);
+                    _videoPoolManager.RemoveVideoFromPool(thumbViewModel.LinkedVideo);
                 }
             });
             
@@ -168,7 +168,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
             var item = thumbGenerationJobs[i];
             var i1 = i;
             var thumbTimePositionMs = appSettings.Previews.ThumbnailTimePositionPcnt / 100.0 * (long)(item.mediaInfo.DurationInSeconds * 1000);
-            _ = _mediaPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePositionMs)
+            _ = _videoPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePositionMs)
                 .ContinueWith(task =>
                 {
                     if (task.Result != null)
@@ -240,7 +240,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
             var video = videoThumbViewModel.LinkedVideo;
             if (video != null)
             {
-                _conversionManager.RemoveVideoFromPool(video);
+                _videoPoolManager.RemoveVideoFromPool(video);
             }
         }
         VideoList.Clear();
