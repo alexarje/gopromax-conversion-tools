@@ -9,7 +9,7 @@ public partial class VideoRenderQueueEntry : ObservableObject
     [ObservableProperty]
     public partial IConvertableVideo Video { get; set; }
     [ObservableProperty]
-    public partial float Progress { get; set; } = 0;
+    public partial double Progress { get; set; } = 0;
     [ObservableProperty]
     public partial VideoRenderingState RenderingState { get; set; } = VideoRenderingState.Queued;
     [ObservableProperty]
