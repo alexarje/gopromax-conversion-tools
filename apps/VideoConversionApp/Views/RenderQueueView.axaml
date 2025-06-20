@@ -30,7 +30,9 @@
     <converters:VideoOutputFilenameConverter x:Key="VideoOutputFilenameConverter"/>
     <converters:TimelineCropAsStringConverter x:Key="TimelineCropAsStringConverter" />
     <converters:FilenameConverter x:Key="FilenameConverter" />
-    <converters:EnumValueMatchConverter x:Key="EnumValueMatchConverter"></converters:EnumValueMatchConverter>
+    <converters:EnumValueMatchConverter x:Key="EnumValueMatchConverter" />
+    <converters:EnumValueNotMatchConverter x:Key="EnumValueNotMatchConverter" />
+    <converters:EnumValueMatchAnyConverter x:Key="EnumValueMatchAnyConverter" />
   </UserControl.Resources>
 
   <UserControl.Styles>
@@ -51,7 +53,7 @@
     </Style>   
     <Style Selector="PathIcon.compact-render-canceled">
       <Setter Property="Data" Value="{StaticResource dismiss_regular}"></Setter>
-      <Setter Property="Foreground" Value="Firebrick"></Setter>
+      
     </Style>
   </UserControl.Styles>
   
@@ -163,17 +165,46 @@
                           <Setter Property="Height" Value="10"></Setter>
                         </Style>
                       </StackPanel.Styles>
-                      <Button
+                      <Button 
+                        Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).RetryRenderingQueueEntryCommand}"
+                        CommandParameter="{Binding}"
                         ToolTip.Tip="Retry rendering">
-                        <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon></Button>
+                        <Button.IsVisible>
+                          <MultiBinding Converter="{StaticResource EnumValueMatchAnyConverter}">
+                            <Binding Path="RenderingState" />
+                            <Binding Source="{x:Static models:VideoRenderingState.CompletedWithErrors}" />
+                            <Binding Source="{x:Static models:VideoRenderingState.Canceled}" />
+                          </MultiBinding>
+                        </Button.IsVisible>
+                        <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon>
+                      </Button>
+                      <Button 
+                        IsVisible="{Binding RenderingState, 
+                        Converter={StaticResource EnumValueMatchConverter}, 
+                        ConverterParameter={x:Static models:VideoRenderingState.Rendering}}"
+                        Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).RetryRenderingQueueEntryCommand}"
+                        CommandParameter="{Binding}"
+                        ToolTip.Tip="Stop/cancel rendering">
+                        <PathIcon Data="{StaticResource stop_regular}"></PathIcon></Button>
                       <Button
+                        IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).IsRenderingInProgress}"
+                        Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).RemoveQueueEntryCommand}"
+                        CommandParameter="{Binding}"
                         ToolTip.Tip="Remove from queue" FontSize="8">
                         <PathIcon Data="{StaticResource dismiss_regular}"></PathIcon>
                       </Button>
-                      <Button ToolTip.Tip="Move up in queue">
+                      <Button
+                        IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).IsRenderingInProgress}"
+                        Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).MoveUpQueueEntryCommand}"
+                        CommandParameter="{Binding}"
+                        ToolTip.Tip="Move up in queue">
                         <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>
                       </Button>
-                      <Button ToolTip.Tip="Move down in queue">
+                      <Button
+                        IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).IsRenderingInProgress}"
+                        Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).MoveDownQueueEntryCommand}"
+                        CommandParameter="{Binding}"
+                        ToolTip.Tip="Move down in queue">
                         <PathIcon Data="{StaticResource arrow_down_regular}"></PathIcon>
                       </Button>
                     </StackPanel>
@@ -311,17 +342,46 @@
                           </Style>
                         </StackPanel.Styles>
                         <Button
-                          ToolTip.Tip="Retry rendering">
-                          <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon></Button>
+                          ToolTip.Tip="Retry rendering"
+                          Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).RetryRenderingQueueEntryCommand}"
+                          CommandParameter="{Binding}">
+                          <Button.IsVisible>
+                            <MultiBinding Converter="{StaticResource EnumValueMatchAnyConverter}">
+                              <Binding Path="RenderingState" />
+                              <Binding Source="{x:Static models:VideoRenderingState.CompletedWithErrors}" />
+                              <Binding Source="{x:Static models:VideoRenderingState.Canceled}" />
+                            </MultiBinding>
+                          </Button.IsVisible>
+                          <PathIcon Data="{StaticResource arrow_redo_regular}"></PathIcon>
+                        </Button>
                         <Button
+                          ToolTip.Tip="Stop/cancel rendering"
+                          IsVisible="{Binding RenderingState, 
+                          Converter={StaticResource EnumValueMatchConverter}, 
+                          ConverterParameter={x:Static models:VideoRenderingState.Rendering}}"
+                          Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).CancelRenderingQueueEntryCommand}"
+                          CommandParameter="{Binding}">
+                          <PathIcon Data="{StaticResource stop_regular}"></PathIcon></Button>
+                        <Button
+                          IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).IsRenderingInProgress}"
+                          Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).RemoveQueueEntryCommand}"
+                          CommandParameter="{Binding}"
                           ToolTip.Tip="Remove from queue">
                           <PathIcon Data="{StaticResource dismiss_regular}"></PathIcon>
                         </Button>
-                        <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                          <Button ToolTip.Tip="Move up in queue">
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center"
+                          IsVisible="{Binding !$parent[ListBox].((vm:RenderQueueViewModel)DataContext).IsRenderingInProgress}"  
+                          >
+                          <Button
+                            Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).MoveUpQueueEntryCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="Move up in queue">
                             <PathIcon Data="{StaticResource arrow_up_regular}"></PathIcon>
                           </Button>
-                          <Button ToolTip.Tip="Move down in queue">
+                          <Button
+                            Command="{Binding $parent[ListBox].((vm:RenderQueueViewModel)DataContext).MoveDownQueueEntryCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="Move down in queue">
                             <PathIcon Data="{StaticResource arrow_down_regular}"></PathIcon>
                           </Button>
                         </StackPanel>

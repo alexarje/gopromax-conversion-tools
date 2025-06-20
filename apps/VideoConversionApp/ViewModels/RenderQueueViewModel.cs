@@ -23,6 +23,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     public IVideoPoolManager VideoPoolManager => _videoPoolManager; 
     public IVideoConverterService ConverterService => _converterService;
 
+    [ObservableProperty]
+    public partial bool IsRenderingInProgress { get; set; } // TODO have events in IVideoConverterService and update this with them
+    
     [ObservableProperty] 
     public partial bool ShowExpandedView { get; set; } = true;
     
@@ -45,8 +48,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             _videoPoolManager = new VideoPoolManager(null);
             var newEntry = new VideoRenderQueueEntry(_videoPoolManager.GetDummyVideo());
-            if (Design.IsDesignMode)
-                newEntry.Thumbnail = GetThumbForDesigner();
+            newEntry.Thumbnail = GetThumbForDesigner();
+            newEntry.RenderingState = VideoRenderingState.Queued;
             RenderQueue.Add(newEntry);
             return;
         }
@@ -162,5 +165,34 @@ public partial class RenderQueueViewModel : ViewModelBase
             .Where(x => x.RenderingState == VideoRenderingState.CompletedSuccessfully).ToList();
         items.ForEach(item => item.Video.IsEnabledForConversion = false);
     }
+
+    [RelayCommand]
+    public void MoveUpQueueEntry(VideoRenderQueueEntry entry)
+    {
+        
+    }
     
+    [RelayCommand]
+    public void MoveDownQueueEntry(VideoRenderQueueEntry entry)
+    {
+        
+    }
+    
+    [RelayCommand]
+    public void RemoveQueueEntry(VideoRenderQueueEntry entry)
+    {
+        
+    }
+    
+    [RelayCommand]
+    public void CancelRenderingQueueEntry(VideoRenderQueueEntry entry)
+    {
+        
+    }
+    
+    [RelayCommand]
+    public void RetryRenderingQueueEntry(VideoRenderQueueEntry entry)
+    {
+        
+    }
 }
