@@ -19,5 +19,4 @@ public interface IVideoPoolManager
     IConvertableVideo GetDummyVideo();
     IConvertableVideo AddVideoToPool(IInputVideoInfo inputVideoInfo);
     void RemoveVideoFromPool(IConvertableVideo video);
-    //string GetFilenameFromPattern(IInputVideoInfo inputVideoInfo, TimelineCrop crop, string pattern);
 }

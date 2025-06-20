@@ -1,13 +1,19 @@
+using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using VideoConversionApp.Abstractions;
 
 namespace VideoConversionApp.Models;
 
-public class VideoRenderQueueEntry
+public partial class VideoRenderQueueEntry : ObservableObject
 {
-    public IConvertableVideo Video { get; set; }
-    public float Progress { get; set; } = 0;
-    public bool Success { get; set; } = false;
-    public bool Canceled { get; set; } = false;
+    [ObservableProperty]
+    public partial IConvertableVideo Video { get; set; }
+    [ObservableProperty]
+    public partial float Progress { get; set; } = 0;
+    [ObservableProperty]
+    public partial VideoRenderingState RenderingState { get; set; } = VideoRenderingState.Queued;
+    [ObservableProperty]
+    public partial Bitmap? Thumbnail { get; set; }
 
     public VideoRenderQueueEntry(IConvertableVideo video)
     {

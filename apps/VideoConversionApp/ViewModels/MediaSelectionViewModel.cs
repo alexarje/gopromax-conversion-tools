@@ -23,6 +23,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
     private readonly IStorageDialogProvider _storageDialogProvider;
     private readonly IVideoPreviewService _videoPreviewService;
     private readonly IVideoPoolManager _videoPoolManager;
+    private readonly IBitmapCache _bitmapCache;
     private readonly ConversionPreviewViewModel _conversionPreviewViewModel;
 
     [ObservableProperty]
@@ -47,7 +48,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         {
             SetProperty(ref field, value);
         }
-    } = new SortableObservableCollection<VideoThumbViewModel>();
+    } = new ();
     
     public MediaSelectionViewModel(
         IAppConfigService appConfigService,
@@ -55,6 +56,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         IStorageDialogProvider storageDialogProvider,
         IVideoPreviewService videoPreviewService,
         IVideoPoolManager videoPoolManager,
+        IBitmapCache bitmapCache,
         ConversionPreviewViewModel conversionPreviewViewModel)
     {
         _appConfigService = appConfigService;
@@ -62,6 +64,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         _storageDialogProvider = storageDialogProvider;
         _videoPreviewService = videoPreviewService;
         _videoPoolManager = videoPoolManager;
+        _bitmapCache = bitmapCache;
         _conversionPreviewViewModel = conversionPreviewViewModel;
         SelectedSort = SortOptions.First();
 
@@ -112,18 +115,18 @@ public partial class MediaSelectionViewModel : ViewModelBase
             FileTypeFilter = [videoType]
         });
 
-        var thumbGenerationJobs = new List<(VideoThumbViewModel thumbViewModel, IInputVideoInfo mediaInfo)>();
+        var thumbGenerationJobs = new List<(VideoThumbViewModel thumbViewModel, IInputVideoInfo inputVideoInfo)>();
         foreach (var selectedFile in selectedFiles)
         {
             var fullFilename = selectedFile!.TryGetLocalPath();
             if (VideoList.Any(v => v.FullFileName == fullFilename))
                 continue;
             
-            var mediaInfo = await _videoInfoService.ParseMediaAsync(fullFilename!);
+            var videoInfo = await _videoInfoService.ParseMediaAsync(fullFilename!);
             IConvertableVideo? video = null;
-            if (mediaInfo.IsValidVideo && mediaInfo.IsGoProMaxFormat)
+            if (videoInfo.IsValidVideo && videoInfo.IsGoProMaxFormat)
             {
-                video = _videoPoolManager.AddVideoToPool(mediaInfo);
+                video = _videoPoolManager.AddVideoToPool(videoInfo);
                 video.SettingsChanged += VideoOnConversionSettingsChanged;
                 video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
             }
@@ -132,14 +135,14 @@ public partial class MediaSelectionViewModel : ViewModelBase
             {
                 FullFileName = fullFilename!,
                 PreviewFileName = Path.GetFileName(fullFilename!),
-                FileSize = mediaInfo.SizeBytes,
-                VideoDateTime = mediaInfo.CreatedDateTime,
-                VideoLengthSeconds = (double)mediaInfo.DurationInSeconds,
+                FileSize = videoInfo.SizeBytes,
+                VideoDateTime = videoInfo.CreatedDateTime,
+                VideoLengthSeconds = (double)videoInfo.DurationInSeconds,
                 ShowAsSelectedForConversion = false,
                 LinkedVideo = video,
-                HasProblems = !mediaInfo.IsGoProMaxFormat || !mediaInfo.IsValidVideo,
-                ToolTipMessage = mediaInfo.ValidationIssues is { Length: > 0 } 
-                    ? string.Join("\n", new[] {"Video has issues, cannot use:"}.Concat(mediaInfo.ValidationIssues)) 
+                HasProblems = !videoInfo.IsGoProMaxFormat || !videoInfo.IsValidVideo,
+                ToolTipMessage = videoInfo.ValidationIssues is { Length: > 0 } 
+                    ? string.Join("\n", new[] {"Video has issues, cannot use:"}.Concat(videoInfo.ValidationIssues)) 
                     : null!
             };
 
@@ -157,7 +160,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
                 if (thumbViewModel.LinkedVideo != null)
                     thumbViewModel.LinkedVideo.IsEnabledForConversion = isChecked;
             });
-            thumbGenerationJobs.Add((thumbViewModel, mediaInfo));
+            thumbGenerationJobs.Add((thumbViewModel, videoInfo));
             VideoList.Add(thumbViewModel);
         }
         
@@ -166,15 +169,23 @@ public partial class MediaSelectionViewModel : ViewModelBase
         for (var i = 0; i < thumbGenerationJobs.Count; i++)
         {
             var item = thumbGenerationJobs[i];
+            var existingThumb = _bitmapCache.Get(item.inputVideoInfo.Filename);
+            if (existingThumb != null)
+            {
+                item.thumbViewModel.ThumbnailImage = existingThumb;
+                item.thumbViewModel.HasLoadingThumbnail = false;
+                continue;
+            }
+
             var i1 = i;
-            var thumbTimePositionMs = appSettings.Previews.ThumbnailTimePositionPcnt / 100.0 * (long)(item.mediaInfo.DurationInSeconds * 1000);
-            _ = _videoPreviewService.QueueThumbnailGenerationAsync(item.mediaInfo, (long)thumbTimePositionMs)
+            var thumbTimePositionMs = appSettings.Previews.ThumbnailTimePositionPcnt / 100.0 * (long)(item.inputVideoInfo.DurationInSeconds * 1000);
+            _ = _videoPreviewService.QueueThumbnailGenerationAsync(item.inputVideoInfo, (long)thumbTimePositionMs)
                 .ContinueWith(task =>
                 {
                     if (task.Result != null)
                     {
-                        using var stream = new MemoryStream(task.Result);
-                        thumbGenerationJobs[i1].thumbViewModel.ThumbnailImage = new Bitmap(stream);
+                        var bitmap = _bitmapCache.Add(item.inputVideoInfo.Filename, task.Result);
+                        thumbGenerationJobs[i1].thumbViewModel.ThumbnailImage = bitmap;
                         thumbGenerationJobs[i1].thumbViewModel.HasLoadingThumbnail = false;
                     }
                 });

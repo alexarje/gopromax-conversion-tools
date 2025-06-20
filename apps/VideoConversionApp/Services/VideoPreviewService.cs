@@ -400,11 +400,13 @@ public class VideoPreviewService : IVideoPreviewService
 
     public byte[]? GetCachedThumbnail(IInputVideoInfo inputVideo)
     {
+        // TODO use the bitmap cache?
         return _thumbnailCache.GetValueOrDefault(inputVideo.Filename);
     }
 
     public byte[]? GetCachedThumbnail(string videoFilename)
     {
+        // TODO use the bitmap cache?
         return _thumbnailCache.GetValueOrDefault(videoFilename);
     }
 }

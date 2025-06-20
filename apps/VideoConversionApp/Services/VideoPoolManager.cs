@@ -105,7 +105,7 @@ public class VideoPoolManager : IVideoPoolManager
 
     private class PreviewDummyInputVideoInfo : IInputVideoInfo
     {
-        public string Filename { get; } = "GS204012.360";
+        public string Filename { get; } = "/path/to/GS204012.360";
         public bool IsValidVideo { get; } = true;
         public bool IsGoProMaxFormat { get; } = true;
         public decimal DurationInSeconds { get; } = (decimal)143.528;

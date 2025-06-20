@@ -1,5 +1,8 @@
+using System;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
@@ -13,6 +16,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 {
     private readonly IVideoConverterService _converterService;
     private readonly IVideoPoolManager _videoPoolManager;
+    private readonly IBitmapCache _bitmapCache;
     private readonly IAppConfigService _appConfigService;
     public SortableObservableCollection<VideoRenderQueueEntry> RenderQueue { get; } = new ();
     
@@ -25,39 +29,64 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     public partial string NamingPattern { get; set; } = "%o-%c";
     
+    [ObservableProperty]
+    public partial string OutputDirectory { get; set; } = "";
+    
+    [ObservableProperty]
+    public partial bool OutputBesideOriginals { get; set; }
+    
     
     public RenderQueueViewModel(IVideoConverterService converterService, 
         IVideoPoolManager videoPoolManager,
+        IBitmapCache bitmapCache,
         IAppConfigService appConfigService)
     {
         if (Design.IsDesignMode)
         {
             _videoPoolManager = new VideoPoolManager(null);
-            RenderQueue.Add(new VideoRenderQueueEntry(_videoPoolManager.GetDummyVideo()));
+            var newEntry = new VideoRenderQueueEntry(_videoPoolManager.GetDummyVideo());
+            if (Design.IsDesignMode)
+                newEntry.Thumbnail = GetThumbForDesigner();
+            RenderQueue.Add(newEntry);
             return;
         }
         
         _converterService = converterService;
         _videoPoolManager = videoPoolManager;
+        _bitmapCache = bitmapCache;
         _appConfigService = appConfigService;
+
+        var config = appConfigService.GetConfig();
+        NamingPattern = config.Conversion.OutputFilenamePattern;
+        OutputDirectory = config.Conversion.OutputDirectory;
+        OutputBesideOriginals = config.Conversion.OutputBesideOriginals;
 
         _videoPoolManager.VideoAddedToPool += VideoPoolManagerOnVideoAddedToPool;
         _videoPoolManager.VideoRemovedFromPool += VideoPoolManagerOnVideoRemovedFromPool;
         
-        //_videoPoolManager.GetConversionSettings().OutputFilenamePatternChanged += OnOutputFilenamePatternChanged;
         _appConfigService.GetConfig().PropertyChanged += OnConfigPropertyChanged;
     }
 
     private void OnConfigPropertyChanged(object? sender, ConfigChangedEventArgs e)
     {
-        if (e.PropertyPath == $"{nameof(IAppConfigModel.Conversion)}.{nameof(IConfigConversion.OutputFilenamePattern)}")
-            NamingPattern = ((string)e.NewValue)!;
+        if (e.PropertyPath.StartsWith(nameof(IAppConfigModel.Conversion)))
+        {
+            if (e.PropertyPath.EndsWith($".{nameof(IConfigConversion.OutputFilenamePattern)}"))
+            {
+                NamingPattern = (string)e.NewValue!;
+            }
+            if (e.PropertyPath.EndsWith($".{nameof(IConfigConversion.OutputDirectory)}"))
+            {
+                OutputDirectory = (string)e.NewValue!;
+            }
+            if (e.PropertyPath.EndsWith($".{nameof(IConfigConversion.OutputBesideOriginals)}"))
+            {
+                OutputBesideOriginals = (bool)e.NewValue!;
+            }
+        }
+        
     }
-
-    // private void OnOutputFilenamePatternChanged(object? sender, string pattern)
-    // {
-    //     NamingPattern = pattern;
-    // }
+    
 
     private void VideoPoolManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
     {
@@ -73,11 +102,26 @@ public partial class RenderQueueViewModel : ViewModelBase
         video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
     }
 
+    private Bitmap GetThumbForDesigner()
+    {
+        using var defaultThumb = AssetLoader.Open(new Uri("avares://VideoConversionApp/Images/sample-thn-256.jpg"));
+        return new Bitmap(defaultThumb);
+    }
+
     private void VideoOnIsEnabledForConversionUpdated(object? sender, bool enabled)
     {
         var video = (IConvertableVideo) sender!;
         if (enabled && RenderQueue.All(entry => entry.Video != video))
-            RenderQueue.Add(new VideoRenderQueueEntry(video));
+        {
+            var newEntry = new VideoRenderQueueEntry(video)
+            {
+                Thumbnail = _bitmapCache.Get(video.InputVideoInfo.Filename)
+            };
+            if (Design.IsDesignMode)
+                newEntry.Thumbnail = GetThumbForDesigner();
+
+            RenderQueue.Add(newEntry);
+        }
         if (!enabled)
         {
             var queuedVideo = RenderQueue.FirstOrDefault(entry => entry.Video == video);
@@ -108,6 +152,14 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         var items = RenderQueue.ToList();
         // Event handler handles the rest.
+        items.ForEach(item => item.Video.IsEnabledForConversion = false);
+    }
+
+    [RelayCommand]
+    public void ClearCompletedFromQueue()
+    {
+        var items = RenderQueue
+            .Where(x => x.RenderingState == VideoRenderingState.CompletedSuccessfully).ToList();
         items.ForEach(item => item.Video.IsEnabledForConversion = false);
     }
     

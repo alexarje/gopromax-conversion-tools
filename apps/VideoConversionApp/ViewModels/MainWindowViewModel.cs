@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
+using VideoConversionApp.Services;
 
 namespace VideoConversionApp.ViewModels;
 
@@ -30,9 +31,9 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             ConversionPreviewViewModel = new ConversionPreviewViewModel(null!, null!, null!, new PreviewVideoPlayerState());
             MediaSelectionViewModel = new MediaSelectionViewModel(null!, null!, 
-                null!, null!, null!, ConversionPreviewViewModel);
+                null!, null!, null!, new BitmapCache(), ConversionPreviewViewModel);
             RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!, null!, null!);
-            RenderQueueViewModel = new RenderQueueViewModel(null!, null!, null!);
+            RenderQueueViewModel = new RenderQueueViewModel(null!, null!, new BitmapCache(), null!);
         }
     }
     

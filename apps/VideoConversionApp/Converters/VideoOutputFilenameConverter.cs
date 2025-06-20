@@ -16,9 +16,11 @@ public class VideoOutputFilenameConverter : IMultiValueConverter
             var video = values[0] as IConvertableVideo;
             var mediaConverterService = values[1] as IVideoConverterService;
             var pattern = values[2] as string;
-            
-            if(video != null && mediaConverterService != null && pattern != null)
-                return mediaConverterService.GetFilenameFromPattern(video, pattern);
+
+            if (video == null || mediaConverterService == null || pattern == null) 
+                return "";
+
+            return mediaConverterService.GetFilenameFromPattern(video, pattern);
         }
 
         return "";

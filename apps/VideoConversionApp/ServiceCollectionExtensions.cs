@@ -13,6 +13,7 @@ public static class ServiceCollectionExtensions
         
         collection.AddSingleton<IStorageDialogProvider, StorageDialogProvider>();
         
+        collection.AddSingleton<IBitmapCache, BitmapCache>();
         collection.AddSingleton<IVideoInfoService, VideoInfoService>();
         collection.AddSingleton<IVideoPreviewService, VideoPreviewService>();
         collection.AddSingleton<IAppConfigService, AppConfigService>();
