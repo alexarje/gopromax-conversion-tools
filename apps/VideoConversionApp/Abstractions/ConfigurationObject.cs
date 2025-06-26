@@ -6,7 +6,7 @@ namespace VideoConversionApp.Abstractions;
 
 public abstract class ConfigurationObject<T> : ISerializableConfiguration<T> where T:class
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions()
+    private static readonly JsonSerializerOptions SerializerOptions = new ()
     {
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase

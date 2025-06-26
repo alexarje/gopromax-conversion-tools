@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<IBitmapCache, BitmapCache>();
         collection.AddSingleton<IVideoInfoService, VideoInfoService>();
         collection.AddSingleton<IVideoPreviewService, VideoPreviewService>();
-        collection.AddSingleton<IAppConfigService, AppConfigService>();
+        collection.AddSingleton<IConfigManager, ConfigManager>();
         collection.AddSingleton<IVideoPoolManager, VideoPoolManager>();
         collection.AddSingleton<IAvFilterFactory, AvFilterFactory>();
         collection.AddSingleton<IVideoConverterService, VideoConverterService>();

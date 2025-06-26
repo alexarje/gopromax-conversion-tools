@@ -4,19 +4,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Config;
 using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Services;
 
 public class VideoConverterService : IVideoConverterService
 {
-    private readonly IAppConfigService _appConfigService;
+    private readonly IConfigManager _configManager;
     private List<CodecEntry>? _ffmpegEncodingVideoCodecs;
     private List<CodecEntry>? _ffmpegEncodingAudioCodecs;
     
-    public VideoConverterService(IAppConfigService appConfigService)
+    public VideoConverterService(IConfigManager configManager)
     {
-        _appConfigService = appConfigService;
+        _configManager = configManager;
     }
 
     private void PopulateValidCodecs()
@@ -24,11 +25,11 @@ public class VideoConverterService : IVideoConverterService
         var audioCodecs = new List<CodecEntry>();
         var videoCodecs = new List<CodecEntry>();
         
-        var appSettings = _appConfigService.GetConfig();
+        var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
         var codecParseRegex = new Regex(
             @"^\s(?<decode>[D\.])(?<encode>[E\.])(?<type>[VASDT\.])([I\.])(?<lossy>[L\.])(?<lossless>[S\.])\s(?<name>\w*)\s*(?<desc>.*)$");
         
-        var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
         [
             "-codecs"
         ])

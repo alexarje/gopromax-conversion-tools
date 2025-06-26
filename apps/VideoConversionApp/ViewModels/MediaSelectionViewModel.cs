@@ -10,6 +10,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Config;
 using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
 using VideoConversionApp.ViewModels.Components;
@@ -18,13 +19,13 @@ namespace VideoConversionApp.ViewModels;
 
 public partial class MediaSelectionViewModel : ViewModelBase
 {
-    private readonly IAppConfigService _appConfigService;
     private readonly IVideoInfoService _videoInfoService;
     private readonly IStorageDialogProvider _storageDialogProvider;
     private readonly IVideoPreviewService _videoPreviewService;
     private readonly IVideoPoolManager _videoPoolManager;
     private readonly IBitmapCache _bitmapCache;
     private readonly ConversionPreviewViewModel _conversionPreviewViewModel;
+    private readonly IConfigManager _configManager;
 
     [ObservableProperty]
     public partial bool SortDescending { get; set; }
@@ -51,7 +52,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
     } = new ();
     
     public MediaSelectionViewModel(
-        IAppConfigService appConfigService,
+        IConfigManager configManager,
         IVideoInfoService videoInfoService, 
         IStorageDialogProvider storageDialogProvider,
         IVideoPreviewService videoPreviewService,
@@ -59,7 +60,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         IBitmapCache bitmapCache,
         ConversionPreviewViewModel conversionPreviewViewModel)
     {
-        _appConfigService = appConfigService;
+        _configManager = configManager;
         _videoInfoService = videoInfoService;
         _storageDialogProvider = storageDialogProvider;
         _videoPreviewService = videoPreviewService;
@@ -105,7 +106,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
     [RelayCommand]
     private async Task AddFiles()
     {
-        var appSettings = _appConfigService.GetConfig();
+        var previewSettings = _configManager.GetConfig<PreviewsConfig>()!;
         var videoType = new FilePickerFileType("GoPro MAX .360");
         videoType.Patterns = [".360"];
 
@@ -178,7 +179,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
             }
 
             var i1 = i;
-            var thumbTimePositionMs = appSettings.Previews.ThumbnailTimePositionPcnt / 100.0 * (long)(item.inputVideoInfo.DurationInSeconds * 1000);
+            var thumbTimePositionMs = previewSettings.ThumbnailTimePositionPcnt / 100.0 * (long)(item.inputVideoInfo.DurationInSeconds * 1000);
             _ = _videoPreviewService.QueueThumbnailGenerationAsync(item.inputVideoInfo, (long)thumbTimePositionMs)
                 .ContinueWith(task =>
                 {

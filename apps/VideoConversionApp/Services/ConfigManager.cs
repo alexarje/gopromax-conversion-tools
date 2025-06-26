@@ -25,12 +25,18 @@ public class ConfigManager : IConfigManager
             .Where(t => t.IsAssignableTo(configurableType) && !t.IsAbstract)
             .ToArray();
     }
-    
+
+    public event EventHandler? NewConfigLoaded;
+
     public bool LoadConfigurations(string filename)
     {
+        if (_configs.Count > 0)
+            _configs.Clear();
+        
         if (!File.Exists(filename))
         {
             LoadDefaults();
+            NewConfigLoaded?.Invoke(this, EventArgs.Empty);
             return false;
         }
         
@@ -46,6 +52,7 @@ public class ConfigManager : IConfigManager
             _configs.Add(configurableType, configurable);
         }
 
+        NewConfigLoaded?.Invoke(this, EventArgs.Empty);
         return true;
     }
 
@@ -73,6 +80,7 @@ public class ConfigManager : IConfigManager
             foreach (var configurableType in _types)
             {
                 var configurable = (ISerializableConfiguration)Activator.CreateInstance(configurableType)!;
+                _configs.Add(configurableType, configurable);
                 configJsonNode.Add(configurable.GetConfigurationKey(), configurable.SerializeConfiguration());
             } 
         }

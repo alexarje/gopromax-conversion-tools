@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Config;
 using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
 using File = System.IO.File;
@@ -29,7 +30,7 @@ public class VideoPreviewService : IVideoPreviewService
         public CancellationToken CancellationToken;
     }
 
-    private IAppConfigService _appConfigService;
+    private IConfigManager _configManager;
     private readonly IAvFilterFactory _avFilterFactory;
     private List<Thread> _thumbnailQueueProcessingThreads = new();
     private ConcurrentDictionary<string, byte[]> _thumbnailCache = new();
@@ -38,10 +39,10 @@ public class VideoPreviewService : IVideoPreviewService
         _thumbnailGenerationQueue = new();
 
     
-    public VideoPreviewService(IAppConfigService appConfigService,
+    public VideoPreviewService(IConfigManager configManager,
         IAvFilterFactory avFilterFactory)
     {
-        _appConfigService = appConfigService;
+        _configManager = configManager;
         _avFilterFactory = avFilterFactory;
 
         CachePlaceholderThumbnail();
@@ -74,7 +75,7 @@ public class VideoPreviewService : IVideoPreviewService
     /// </summary>
     private void RunThumbnailProcessingThreads()
     {
-        var threadCount = _appConfigService.GetConfig().Previews.NumberOfThumbnailThreads;
+        var threadCount = _configManager.GetConfig<PreviewsConfig>()!.NumberOfThumbnailThreads;
         lock (_thumbnailQueueProcessingThreads)
         {
             for (var i = _thumbnailQueueProcessingThreads.Count - 1; i >= 0; i--)
@@ -98,7 +99,7 @@ public class VideoPreviewService : IVideoPreviewService
     /// </summary>
     private void ProcessThumbnailQueue()
     {
-        var appSettings = _appConfigService.GetConfig();
+        var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
         
         var avFilterString = _avFilterFactory.BuildAvFilter(
             new AvFilterFrameSelectCondition() { KeyFramesOnly = true }, AvFilterFrameRotation.Zero);
@@ -109,7 +110,7 @@ public class VideoPreviewService : IVideoPreviewService
             var tmpThumbFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".jpg");
             var thumbTimePosition = timePosMs / 1000.0;
             
-            var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
+            var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
                 [
                     "-loglevel", "8",
                     "-discard", "nokey",
@@ -167,7 +168,7 @@ public class VideoPreviewService : IVideoPreviewService
         if (numberOfFrames < 2)
             throw new ArgumentException("Number of frames must be at least 2");
      
-        var appSettings = _appConfigService.GetConfig();
+        var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
         var skipLength = inputVideo.DurationInSeconds / (numberOfFrames - 1);
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
@@ -183,7 +184,7 @@ public class VideoPreviewService : IVideoPreviewService
         
         var tmpFrameFilePath = Path.Combine(tempPath, "snapshot-%06d.jpg");
 
-        var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
             [
                 "-loglevel", "8",
                 "-discard", "nokey",
@@ -274,7 +275,7 @@ public class VideoPreviewService : IVideoPreviewService
     {
         var mediaInfo = video.InputVideoInfo;
         var rotation = video.FrameRotation;
-        var appSettings = _appConfigService.GetConfig();
+        var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
         {
@@ -287,7 +288,7 @@ public class VideoPreviewService : IVideoPreviewService
         
         var tmpVideoFilePath = Path.Combine(tempPath, "keyframevideo.mp4");
 
-        var processStartInfo = new ProcessStartInfo(appSettings.Paths.Ffmpeg,
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
             [
                 "-loglevel", "8",
                 "-discard", "nokey",
@@ -341,7 +342,7 @@ public class VideoPreviewService : IVideoPreviewService
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && File.Exists(tmpVideoFilePath))
             {
-                var taggingProcessStartInfo = new ProcessStartInfo(appSettings.Paths.Exiftool,
+                var taggingProcessStartInfo = new ProcessStartInfo(pathsConfig.Exiftool,
                     [
                         "-api", "LargeFileSupport=1",
                         "-overwrite_original",

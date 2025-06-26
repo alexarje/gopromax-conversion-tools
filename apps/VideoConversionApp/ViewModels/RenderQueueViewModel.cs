@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
@@ -6,6 +7,7 @@ using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Config;
 using VideoConversionApp.Models;
 using VideoConversionApp.Services;
 using VideoConversionApp.Utils;
@@ -17,7 +19,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly IVideoConverterService _converterService;
     private readonly IVideoPoolManager _videoPoolManager;
     private readonly IBitmapCache _bitmapCache;
-    private readonly IAppConfigService _appConfigService;
+    private readonly IConfigManager _configManager;
+    
+    private ConversionConfig _conversionConfig;
+    
     public SortableObservableCollection<VideoRenderQueueEntry> RenderQueue { get; } = new ();
     
     public IVideoPoolManager VideoPoolManager => _videoPoolManager; 
@@ -42,11 +47,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     public RenderQueueViewModel(IVideoConverterService converterService, 
         IVideoPoolManager videoPoolManager,
         IBitmapCache bitmapCache,
-        IAppConfigService appConfigService)
+        IConfigManager configManager)
     {
         if (Design.IsDesignMode)
         {
-            _videoPoolManager = new VideoPoolManager(null);
+            _videoPoolManager = new VideoPoolManager();
             var newEntry = new VideoRenderQueueEntry(_videoPoolManager.GetDummyVideo());
             newEntry.Thumbnail = GetThumbForDesigner();
             newEntry.RenderingState = VideoRenderingState.Queued;
@@ -57,37 +62,42 @@ public partial class RenderQueueViewModel : ViewModelBase
         _converterService = converterService;
         _videoPoolManager = videoPoolManager;
         _bitmapCache = bitmapCache;
-        _appConfigService = appConfigService;
+        _configManager = configManager;
 
-        var config = appConfigService.GetConfig();
-        NamingPattern = config.Conversion.OutputFilenamePattern;
-        OutputDirectory = config.Conversion.OutputDirectory;
-        OutputBesideOriginals = config.Conversion.OutputBesideOriginals;
+        _conversionConfig = _configManager.GetConfig<ConversionConfig>()!;
+        _conversionConfig.PropertyChanged += OnConfigPropertyChanged;
+        
+        _configManager.NewConfigLoaded += (sender, args) =>
+        {
+            _conversionConfig.PropertyChanged -= OnConfigPropertyChanged;
+            _conversionConfig = _configManager.GetConfig<ConversionConfig>()!;
+            _conversionConfig.PropertyChanged += OnConfigPropertyChanged;
+        };
+        
+        NamingPattern = _conversionConfig.OutputFilenamePattern;
+        OutputDirectory = _conversionConfig.OutputDirectory;
+        OutputBesideOriginals = _conversionConfig.OutputBesideOriginals;
 
         _videoPoolManager.VideoAddedToPool += VideoPoolManagerOnVideoAddedToPool;
         _videoPoolManager.VideoRemovedFromPool += VideoPoolManagerOnVideoRemovedFromPool;
-        
-        _appConfigService.GetConfig().PropertyChanged += OnConfigPropertyChanged;
+
     }
 
-    private void OnConfigPropertyChanged(object? sender, ConfigChangedEventArgs e)
+    private void OnConfigPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyPath.StartsWith(nameof(IAppConfigModel.Conversion)))
+        if (e.PropertyName == nameof(ConversionConfig.OutputFilenamePattern))
         {
-            if (e.PropertyPath.EndsWith($".{nameof(IConfigConversion.OutputFilenamePattern)}"))
-            {
-                NamingPattern = (string)e.NewValue!;
-            }
-            if (e.PropertyPath.EndsWith($".{nameof(IConfigConversion.OutputDirectory)}"))
-            {
-                OutputDirectory = (string)e.NewValue!;
-            }
-            if (e.PropertyPath.EndsWith($".{nameof(IConfigConversion.OutputBesideOriginals)}"))
-            {
-                OutputBesideOriginals = (bool)e.NewValue!;
-            }
+            NamingPattern = _conversionConfig.OutputFilenamePattern;
         }
-        
+        if (e.PropertyName == nameof(ConversionConfig.OutputDirectory))
+        {
+            OutputDirectory = _conversionConfig.OutputDirectory;
+        }
+        if (e.PropertyName == nameof(ConversionConfig.OutputBesideOriginals))
+        {
+            OutputBesideOriginals = _conversionConfig.OutputBesideOriginals;
+        }
+       
     }
     
 

@@ -7,6 +7,7 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VideoConversionApp.Abstractions;
+using VideoConversionApp.Config;
 using VideoConversionApp.Models;
 using VideoConversionApp.Utils;
 using VideoConversionApp.ViewModels.Components;
@@ -16,7 +17,7 @@ namespace VideoConversionApp.ViewModels;
 public partial class ConversionPreviewViewModel : ViewModelBase
 {
     private readonly IVideoPreviewService _videoPreviewService;
-    private readonly IAppConfigService _appConfigService;
+    private readonly IConfigManager _configManager;
     private readonly IVideoPoolManager _videoPoolManager;
     private readonly PreviewVideoPlayerState _previewVideoPlayerState;
 
@@ -67,12 +68,12 @@ public partial class ConversionPreviewViewModel : ViewModelBase
     
     public ConversionPreviewViewModel(
         IVideoPreviewService videoPreviewService,
-        IAppConfigService appConfigService,
+        IConfigManager configManager,
         IVideoPoolManager videoPoolManager,
         PreviewVideoPlayerState previewVideoPlayerState)
     {
         _videoPreviewService = videoPreviewService;
-        _appConfigService = appConfigService;
+        _configManager = configManager;
         _videoPoolManager = videoPoolManager;
         _previewVideoPlayerState = previewVideoPlayerState;
         //Video = _conversionManager.GetPlaceholderVideo();
@@ -300,8 +301,9 @@ public partial class ConversionPreviewViewModel : ViewModelBase
 
         var myCts = new CancellationTokenSource();
         _snapshotGenerationCts = myCts;
-        
-        var frameCount = (int)_appConfigService.GetConfig().Previews.NumberOfSnapshotFrames;
+
+        var previewConfig = _configManager.GetConfig<PreviewsConfig>()!;
+        var frameCount = (int)previewConfig.NumberOfSnapshotFrames;
         
         
         try

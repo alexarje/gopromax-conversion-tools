@@ -1,3 +1,4 @@
+using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
@@ -11,6 +12,20 @@ namespace VideoConversionApp;
 
 public partial class App : Application
 {
+    private static string _configFilePath = null!;
+
+    public static string ConfigFilePath
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_configFilePath))
+                _configFilePath = Path.Combine(
+                    Path.GetDirectoryName(typeof(App).Assembly.Location)!,
+                    "config.json");
+            return _configFilePath;
+        }
+    }
+    
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -30,8 +45,9 @@ public partial class App : Application
         var services = collection.BuildServiceProvider();
         
         // Load settings at the beginning.
-        var settings = services.GetRequiredService<IAppConfigService>();
-        settings.LoadConfig();
+        var configManager = services.GetRequiredService<IConfigManager>();
+        if(!configManager.LoadConfigurations(ConfigFilePath))
+            configManager.SaveConfigurations(ConfigFilePath);
         
         var vm = services.GetRequiredService<MainWindowViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

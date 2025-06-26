@@ -126,7 +126,7 @@ public class VideoPoolManager : IVideoPoolManager
     // Dummy video, for filename previews and such.
     private readonly ConvertableVideo _dummyVideo;
     
-    public VideoPoolManager(IAppConfigService appConfigService)
+    public VideoPoolManager()
     {
         _placeholderVideo = new ConvertableVideo(new PlaceholderInputVideoInfo());
         _dummyVideo = new ConvertableVideo(new PreviewDummyInputVideoInfo())
