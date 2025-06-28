@@ -95,7 +95,15 @@
     <Border Classes="pane-body pb-lb">
       <Grid ColumnDefinitions="*" RowDefinitions="*">
 
-        <ListBox Name="RenderQueueListBox" ItemsSource="{Binding RenderQueue}" BorderBrush="Transparent">
+        <StackPanel Orientation="Horizontal" Height="60" VerticalAlignment="Top" HorizontalAlignment="Center"
+          Margin="0 60 0 0"
+          IsVisible="{Binding !RenderQueue.Count}" Opacity="0.4">
+          <TextBlock FontSize="24" FontWeight="Bold" VerticalAlignment="Center">Select </TextBlock>
+          <PathIcon Data="{StaticResource checkbox_checked_regular}" Height="24" Width="24" 
+            Margin="8 0"/>
+          <TextBlock FontSize="24" FontWeight="Bold" VerticalAlignment="Center"> videos in Media tab to the queue</TextBlock>
+        </StackPanel>
+        <ListBox IsVisible="{Binding RenderQueue.Count}" Name="RenderQueueListBox" ItemsSource="{Binding RenderQueue}" BorderBrush="Transparent">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Grid Name="ItemRoot" ColumnDefinitions="*" MaxWidth="{Binding $parent.Bounds.Width}">

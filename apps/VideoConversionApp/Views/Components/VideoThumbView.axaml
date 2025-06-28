@@ -46,7 +46,7 @@
     Classes.problems="{Binding HasProblems}"
     ToolTip.Tip="{Binding ToolTipMessage}">
     <CheckBox Grid.Column="0" Grid.RowSpan="7" Margin="2" 
-      ToolTip.Tip="Set selected for conversion"
+      ToolTip.Tip="Set selected for rendering"
       IsEnabled="{Binding !HasProblems}"
       IsChecked="{Binding ShowAsSelectedForConversion}"
       Command="{Binding OnVideoCheckedChangedCommand}"

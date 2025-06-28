@@ -94,4 +94,8 @@
     <Setter Property="Margin" Value="4 0 0 0"></Setter>
   </Style>
   
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#444444" />
+  </Style>
+  
 </Styles>

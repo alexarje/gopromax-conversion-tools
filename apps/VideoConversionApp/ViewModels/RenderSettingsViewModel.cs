@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -62,6 +63,9 @@ public partial class RenderSettingsViewModel : ViewModelBase
         _converterService = converterService;
         _storageDialogProvider = storageDialogProvider;
         _configManager = configManager;
+
+        if (Design.IsDesignMode)
+            return;
         
         PopulateFromConfig(_configManager.GetConfig<ConversionConfig>()!);
         _configManager.NewConfigLoaded += ConfigManagerOnNewConfigLoaded;
