@@ -11,14 +11,6 @@
 # Also the 360.avfilter file must be present in the same directory as the script, that's the 
 # actual filter that gets applied which transforms the video frames.
 #
-# Arguments:
-# -i: input file path
-# -d: output directory (optional)
-# -n: output file name (optional)
-# -f: force overwriting (optional)
-# -v: video codec name in ffmpeg (optional)
-# -a: audio codec name in ffmpeg (optional)
-# -x: orientation (optional)
 
 usage() { 
   USAGE="$(cat <<EOF
@@ -44,6 +36,10 @@ $(basename "$0") -i <input_filepath> [-d <out_dir> | -n <out_filepath>] [-f]
   -x: Orientation (yaw, pitch, roll) in format <yaw>:<pitch>:<roll> in
       degrees. This will change in which angle the output equirectangular 
       video gets rendered. Optional.
+  -s: Start time in timespan format, e.g. 00:00:12.34 - Optional
+  -t: To time (end time) in timespan format, e.g. 00:01:40.55 - Optional
+  -p: Show progress printouts in output (debug progress output). Adds the
+      -progress flag to ffmpeg args. Defaults to False. Optional
   -c: If set, request to confirm before proceeding to convert. Optional
       flag.
 EOF
@@ -52,7 +48,7 @@ EOF
 }
 
 
-while getopts 'hi:d:n:fv:a:cx:' optchar; do 
+while getopts 'hi:d:n:fv:a:cpx:s:t:' optchar; do
   case "$optchar" in
     i) input_file="$OPTARG" ;;
     d) output_dir="$OPTARG" ;;
@@ -60,7 +56,10 @@ while getopts 'hi:d:n:fv:a:cx:' optchar; do
     f) output_overwrite=true ;;
     v) codec_video="$OPTARG" ;;
     a) codec_audio="$OPTARG" ;;
+    s) start_time="$OPTARG" ;;
+    t) to_time="$OPTARG" ;;
     c) use_confirm=true ;;
+    p) log_progress=true ;;
     x) orientation_str="$OPTARG" ;;
     h|*) usage ;;
   esac 
@@ -140,6 +139,15 @@ orientation_roll=${orientation_roll:-'0'}
 codec_video=${codec_video:-'prores'}
 codec_audio=${codec_audio:-'pcm_s16le'}
 
+# Start and end time (cropping)
+start_time=${start_time:-'00:00:00.00'}
+to_time=${to_time:-'99:00:00.00'}
+
+# Progress to console if flag set
+progress_target="/dev/null"
+if [ "${log_progress}" == true ]; then
+  progress_target="pipe:1"
+fi
 
 # Input parsed, ready to go
 
@@ -172,8 +180,8 @@ avfilter="${avfilter/PARAM_YAW/$orientation_yaw}" || exit 1
 avfilter="${avfilter/PARAM_PITCH/$orientation_pitch}" || exit 1
 avfilter="${avfilter/PARAM_ROLL/$orientation_roll}" || exit 1
 
-ffmpeg -i "$input_file" -y -filter_complex "${avfilter}" -map "[OUTPUT_FRAME]" -map "0:a:0" \
-  -c:v "${codec_video}" -c:a "${codec_audio}" -f mov "$output_filepath"
+ffmpeg -ss "${start_time}" -to "${to_time}" -i "${input_file}" -y -filter_complex "${avfilter}" -map "[OUTPUT_FRAME]" -map "0:a:0" \
+  -progress "${progress_target}" -c:v "${codec_video}" -c:a "${codec_audio}" "${output_filepath}"
 
 [ $? -ne 0 ] && echo "Conversion failed, aborting." && exit 1
 
