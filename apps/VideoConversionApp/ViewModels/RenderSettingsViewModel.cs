@@ -51,6 +51,8 @@ public partial class RenderSettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<CodecEntry>? VideoCodecs { get; set; }
 
+    private bool _eventsEnabled = true;
+    
     public RenderSettingsViewModel(IVideoPoolManager videoPoolManager,
         IVideoConverterService converterService,
         IStorageDialogProvider storageDialogProvider,
@@ -61,17 +63,28 @@ public partial class RenderSettingsViewModel : ViewModelBase
         _storageDialogProvider = storageDialogProvider;
         _configManager = configManager;
         
-        // TODO need to populate settings from configManager
+        PopulateFromConfig(_configManager.GetConfig<ConversionConfig>()!);
+        _configManager.NewConfigLoaded += ConfigManagerOnNewConfigLoaded;
+        
+    }
+
+    private void ConfigManagerOnNewConfigLoaded(object? sender, EventArgs e)
+    {
+        PopulateFromConfig(_configManager.GetConfig<ConversionConfig>()!);
     }
 
     partial void OnSelectedOutputDirectoryMethodChanged(string value)
     {
+        if (!_eventsEnabled) return; 
+        
         IsOutputToSelectedDirSelected = value == "OutputToSelectedDir";
         _configManager.GetConfig<ConversionConfig>()!.OutputBesideOriginals = !IsOutputToSelectedDirSelected;
     }
 
     partial void OnSelectedOutputDirectoryChanged(string value)
     {
+        if (!_eventsEnabled) return;
+        
         var exists = Directory.Exists(value);
         SelectedOutputDirectoryIssues = exists ? string.Empty : "Directory does not exist";
         _configManager.GetConfig<ConversionConfig>()!.OutputDirectory = value;
@@ -81,6 +94,8 @@ public partial class RenderSettingsViewModel : ViewModelBase
 
     partial void OnSelectedVideoCodecTabChanged(string value)
     {
+        if (!_eventsEnabled) return;
+        
         IsOtherVideoCodecSelected = value == "VcOther";
         if (IsOtherVideoCodecSelected && VideoCodecs == null)
             RefreshCodecLists();
@@ -96,14 +111,16 @@ public partial class RenderSettingsViewModel : ViewModelBase
 
     partial void OnSelectedAudioCodecTabChanged(string value)
     {
+        if (!_eventsEnabled) return;
+        
         IsOtherAudioCodecSelected = value == "AcOther";
         if (IsOtherAudioCodecSelected && AudioCodecs == null)
             RefreshCodecLists();
         
         _configManager.GetConfig<ConversionConfig>()!.CodecAudio = value switch
         {
-            "AcPcms16le" => "prores",
-            "AcPcms32le" => "dnxhd",
+            "AcPcms16le" => "pcm_s16le",
+            "AcPcms32le" => "pcm_s32le",
             "AcNone" => "",
             _ => CustomVideoCodecName
         };
@@ -112,24 +129,64 @@ public partial class RenderSettingsViewModel : ViewModelBase
 
     partial void OnCustomVideoCodecNameChanged(string value)
     {
+        if (!_eventsEnabled) return;
+        
         if (IsOtherVideoCodecSelected)
             _configManager.GetConfig<ConversionConfig>()!.CodecVideo = value;
     }
 
     partial void OnCustomAudioCodecNameChanged(string value)
     {
+        if (!_eventsEnabled) return;
+        
         if (IsOtherAudioCodecSelected)
             _configManager.GetConfig<ConversionConfig>()!.CodecAudio = value;
     }
 
     partial void OnFilenamePatternChanged(string value)
     {
+        if (!_eventsEnabled) return;
+        
         var dummyVideo = _videoPoolManager.GetDummyVideo();
         FilenamePreview = _converterService.GetFilenameFromPattern(dummyVideo, value);
         
         _configManager.GetConfig<ConversionConfig>()!.OutputFilenamePattern = value;
 
         FilenamePatternIssues = string.IsNullOrWhiteSpace(FilenamePattern) ? "Filename pattern is empty" : "";
+    }
+
+    private void PopulateFromConfig(ConversionConfig config)
+    {
+        _eventsEnabled = false;
+        
+        if (VideoCodecs == null || AudioCodecs == null)
+            RefreshCodecLists();
+
+        CustomVideoCodecName = config.CodecVideo;
+        CustomAudioCodecName = config.CodecAudio;
+        SelectedVideoCodecTab = config.CodecVideo switch
+        {
+            "prores" => "VcProres",
+            "dnxhd" => "VcDnxhd",
+            "cfhd" => "VcCineform",
+            _ => "VcOther"
+        };
+        SelectedAudioCodecTab = config.CodecAudio switch
+        {
+            "pcm_s16le" => "AcPcms16le",
+            "pcm_s32le" => "AcPcms32le",
+            "" => "AcNone",
+            _ => "AcOther"
+        };
+        IsOtherVideoCodecSelected = SelectedVideoCodecTab == "VcOther";
+        IsOtherAudioCodecSelected = SelectedAudioCodecTab == "AcOther";
+        
+        // Enable events since there are some checks there
+        _eventsEnabled = true;
+        IsOutputToSelectedDirSelected = !config.OutputBesideOriginals;
+        SelectedOutputDirectoryMethod = config.OutputBesideOriginals ? "OutputToSameDir" : "OutputToSelectedDir";
+        SelectedOutputDirectory = config.OutputDirectory;
+        FilenamePattern = config.OutputFilenamePattern;
     }
 
     public void RefreshCodecLists()

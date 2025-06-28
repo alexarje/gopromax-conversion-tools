@@ -1,5 +1,6 @@
 using System.IO;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
@@ -31,6 +32,8 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
+    
+    
     public override void OnFrameworkInitializationCompleted()
     {
         // If you use CommunityToolkit, line below is needed to remove Avalonia data validation.
@@ -58,8 +61,14 @@ public partial class App : Application
             };
             ((StorageDialogProvider)services.GetRequiredService<IStorageDialogProvider>())
                 .UseProviderWindow(desktop.MainWindow);
+
+            desktop.MainWindow.Closing += (sender, args) =>
+            {
+                configManager.SaveConfigurations(ConfigFilePath);
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
     }
+
 }
