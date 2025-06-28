@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Config;
 using VideoConversionApp.Models;
@@ -12,12 +16,23 @@ namespace VideoConversionApp.Services;
 public class VideoConverterService : IVideoConverterService
 {
     private readonly IConfigManager _configManager;
+    private readonly IAvFilterFactory _avFilterFactory;
     private List<CodecEntry>? _ffmpegEncodingVideoCodecs;
     private List<CodecEntry>? _ffmpegEncodingAudioCodecs;
     
-    public VideoConverterService(IConfigManager configManager)
+    public event EventHandler? RenderingQueueProcessingStarted;
+    public event EventHandler? RenderingQueueProcessingFinished;
+    public event EventHandler<VideoRenderQueueEntry>? RenderingFailed;
+    public event EventHandler<VideoRenderQueueEntry>? RenderingSucceeded;
+    public event EventHandler<VideoRenderQueueEntry>? RenderingCanceled;
+
+    private IList<VideoRenderQueueEntry>? _activeRenderingQueue;
+    
+    public VideoConverterService(IConfigManager configManager,
+        IAvFilterFactory avFilterFactory)
     {
         _configManager = configManager;
+        _avFilterFactory = avFilterFactory;
     }
 
     private void PopulateValidCodecs()
@@ -107,6 +122,9 @@ public class VideoConverterService : IVideoConverterService
     //public string GetFilenameFromPattern(IInputVideoInfo inputVideoInfo, TimelineCrop crop, string pattern)
     public string GetFilenameFromPattern(IConvertableVideo video, string pattern)
     {
+        if (string.IsNullOrEmpty(pattern))
+            throw new Exception("Filename pattern is empty");
+            
         var crop = video.TimelineCrop;
         var inputVideoInfo = video.InputVideoInfo;
         
@@ -135,5 +153,223 @@ public class VideoConverterService : IVideoConverterService
             
         return output;
         
+    }
+
+    public async Task<bool> ConvertVideosAsync(IList<VideoRenderQueueEntry> renderingQueue, bool renderAll)
+    {
+        if (_activeRenderingQueue != null)
+            throw new Exception("Video rendering is already running");
+        
+        RenderingQueueProcessingStarted?.Invoke(this, EventArgs.Empty);
+        var allSuccessful = true;
+        var renderableStates = new []
+        {
+            VideoRenderingState.Queued,
+            VideoRenderingState.CompletedWithErrors,
+            VideoRenderingState.Canceled
+        };
+        
+        if (renderAll)
+        {
+            foreach (var entry in renderingQueue)
+                entry.ResetStatus();
+        }
+        
+        _activeRenderingQueue = renderingQueue;
+        foreach (var queueEntry in renderingQueue)
+        {
+            try
+            {
+                if (!renderableStates.Contains(queueEntry.RenderingState))
+                    continue;
+                
+                if (queueEntry.CancellationTokenSource.IsCancellationRequested)
+                {
+                    queueEntry.RenderingState = VideoRenderingState.Canceled;
+                    RenderingCanceled?.Invoke(this, queueEntry);
+                    allSuccessful = false;
+                    continue;
+                }
+                
+                queueEntry.Progress = 0;
+                queueEntry.RenderingState = VideoRenderingState.Rendering;
+                await RenderVideo(queueEntry, queueEntry.CancellationTokenSource.Token);
+                queueEntry.RenderingState = VideoRenderingState.CompletedSuccessfully;
+                RenderingSucceeded?.Invoke(this, queueEntry);
+            }
+            catch (TaskCanceledException e)
+            {
+                queueEntry.RenderingState = VideoRenderingState.Canceled;
+                queueEntry.Errors = new []{ "Rendering process was terminated while rendering was in progress" };
+                RenderingCanceled?.Invoke(this, queueEntry);
+                allSuccessful = false;
+            }
+            catch (Exception e)
+            {
+                queueEntry.RenderingState = VideoRenderingState.CompletedWithErrors;
+                queueEntry.Errors = new []{ e.Message };
+                RenderingFailed?.Invoke(this, queueEntry);
+                allSuccessful = false;
+            }
+        }
+
+        _activeRenderingQueue = null;
+        RenderingQueueProcessingFinished?.Invoke(this, EventArgs.Empty);
+        return allSuccessful;
+    }
+
+    public void SignalCancellation()
+    {
+        if (_activeRenderingQueue == null)
+            return;
+        
+        _activeRenderingQueue.ToList().ForEach(entry => entry.CancellationTokenSource.Cancel());
+    }
+
+    public void SignalCancellation(VideoRenderQueueEntry renderQueueEntry)
+    {
+        renderQueueEntry.CancellationTokenSource.Cancel();
+    }
+
+    private async Task RenderVideo(VideoRenderQueueEntry entry, CancellationToken cancellationToken)
+    {
+        var video = entry.Video;
+        var inputVideoInfo = video.InputVideoInfo;
+        var rotation = video.FrameRotation;
+        var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
+        var conversionConfig = _configManager.GetConfig<ConversionConfig>()!;
+
+        var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition(), rotation);
+
+        var outputVideoFullFilename = GetFilenameFromPattern(video, conversionConfig.OutputFilenamePattern) + ".mp4";
+        if (conversionConfig.OutputBesideOriginals)
+            outputVideoFullFilename = Path.Combine(Path.GetDirectoryName(video.InputVideoInfo.Filename)!, outputVideoFullFilename);
+        else
+            outputVideoFullFilename = Path.Combine(conversionConfig.OutputDirectory, outputVideoFullFilename);
+
+        if (outputVideoFullFilename == video.InputVideoInfo.Filename)
+            throw new Exception("Output video filename is the same as the input video filename");
+        
+        if (File.Exists(outputVideoFullFilename))
+            throw new Exception("Output video file already exists");
+        
+        if (string.IsNullOrEmpty(conversionConfig.CodecVideo))
+            throw new Exception("Video codec is not set");
+        
+        if (string.IsNullOrEmpty(conversionConfig.CodecAudio) && conversionConfig.OutputAudio)
+            throw new Exception("Audio codec is not set");
+
+        var startTime = video.TimelineCrop.StartTimeSeconds != null
+            ? TimeSpan.FromSeconds(Math.Round((double)video.TimelineCrop.StartTimeSeconds, 2))
+            : TimeSpan.Zero;
+        var endTime = video.TimelineCrop.EndTimeSeconds != null
+            ? TimeSpan.FromSeconds(Math.Round((double)video.TimelineCrop.EndTimeSeconds, 2))
+            : TimeSpan.Zero;
+        var duration = endTime - startTime;
+        
+        var argsList = new List<string>
+        {
+            "-loglevel", "8",
+            "-y",
+            "-progress", "pipe:1",
+            "-stats_period", "0.25",
+            "-filter_complex", avFilterString,
+            "-ss", startTime.ToString("c"),
+            "-to", endTime.ToString("c"), 
+            "-i", inputVideoInfo.Filename,
+            "-c:v", conversionConfig.CodecVideo,
+            "-c:a", conversionConfig.CodecAudio,
+            "-map", "[OUTPUT_FRAME]"
+        };
+        if (conversionConfig.OutputAudio)
+            argsList.AddRange("-map", "0:a:0");
+        
+        argsList.Add(outputVideoFullFilename);
+        
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg, argsList)
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true
+        };
+            
+        try
+        {
+            var process = new Process()
+            {
+                StartInfo = processStartInfo,
+                EnableRaisingEvents = true
+            };
+            process.Start();
+            cancellationToken.Register(() => process.Kill());
+
+            process.BeginOutputReadLine();
+            process!.OutputDataReceived += (sender, args) =>
+            {
+                Console.WriteLine(args.Data);
+                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
+                {
+                    var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
+                    var progress = frameTime.TotalMilliseconds / duration.TotalMilliseconds;
+                    entry.Progress = Math.Min(Math.Round(progress * 100.0, 2), 99.0);
+                }
+                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
+                {
+                    entry.Progress = 99.0;
+                }
+            };
+            await process!.WaitForExitAsync(cancellationToken);
+            if (process.ExitCode == 0 && File.Exists(outputVideoFullFilename))
+            {
+                var taggingProcessStartInfo = new ProcessStartInfo(pathsConfig.Exiftool,
+                    [
+                        "-api", "LargeFileSupport=1",
+                        "-overwrite_original",
+                        "-XMP-GSpherical:Spherical=true",
+                        "-XMP-GSpherical:Stitched=true",
+                        "-XMP-GSpherical:StitchingSoftware=MAXVideoConvert",
+                        "-XMP-GSpherical:ProjectionType=equirectangular",
+                        outputVideoFullFilename
+                    ])
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+                var taggingProcess = new Process()
+                {
+                    StartInfo = taggingProcessStartInfo,
+                    EnableRaisingEvents = true
+                };
+                taggingProcess.Start();
+                cancellationToken.Register(() => taggingProcess.Kill());
+                
+                await taggingProcess!.WaitForExitAsync(cancellationToken);
+                entry.Progress = 100.0;
+                if (taggingProcess.ExitCode == 0)
+                {
+                    return;
+                }
+                throw new Exception($"ExifTool process returned {taggingProcess.ExitCode}");
+            }
+            else
+            {
+                Console.WriteLine(process.StandardError.ReadToEnd());
+                Console.WriteLine(process.ExitCode);
+                
+                throw new Exception($"Ffmpeg process returned {process.ExitCode}");
+            }
+        }
+        catch (TaskCanceledException e)
+        {
+            Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+            throw;
+        }
+        catch (Exception e)
+        {
+            // TODO handle this
+            Console.WriteLine("Exception: " + e.Message);
+            throw;
+        }
     }
 }

@@ -401,13 +401,23 @@
                         IsVisible="{Binding Progress}"></ProgressBar>
                     </Border>
                     <Panel Name="ErrorHolderPanel" Margin="0 10 0 0" Width="{Binding $parent.Bounds.Width}"
-                      IsVisible="false">
+                      IsVisible="{Binding Errors.Length}">
                       <Border Padding="10" Background="rgba(255,20,0,200)" CornerRadius="6" 
                         BorderThickness="2 0 2 0" BorderBrush="Red">
                         <Panel ClipToBounds="True">
-                          <TextBlock TextWrapping="WrapWithOverflow" MaxWidth="{Binding #ErrorHolderPanel.Bounds.Width}" 
-                            ClipToBounds="True" 
-                            Text="Warning CS8604 : Possible null reference argument for parameter 'item' in 'int IListIImage.IndexOf(IImage item)' Warning CS8604 : Possible null reference argument for parameter 'item' in 'int IListIImage.IndexOf(IImage item)' Warning CS8604 : Possible null reference argument for parameter 'item' in 'int IListIImage.IndexOf(IImage item)'"></TextBlock>
+                          <ItemsControl Name="ErrorStrings" ItemsSource="{Binding Errors}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate> <!-- MaxWidth="{Binding $parent[UserControl] as (views:RenderQueueView).ErrorHolderPanel.Bounds.Width}" -->
+                                <TextBlock TextWrapping="WrapWithOverflow"  
+                                  ClipToBounds="True" Margin="0 0 0 8"
+                                  Text="{Binding}">
+                                  <TextBlock.MaxWidth>
+                                    <Binding Path="$parent[Panel].Bounds.Width"></Binding>
+                                  </TextBlock.MaxWidth>
+                                </TextBlock>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
                         </Panel>
                       </Border>
                     </Panel>
