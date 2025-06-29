@@ -365,21 +365,21 @@ public class VideoConverterService : IVideoConverterService
             "-filter_complex", avFilterString,
             "-map", "[OUTPUT_FRAME]",
             "-c:v", conversionConfig.CodecVideo,
-            "-c:a", conversionConfig.CodecAudio,
-            "-f", "mov" // Has to be so at least with prores! The exit code is 234 - maybe if that happens, try another muxer. mp4 or mov.
-            // TODO take container type from config
+            "-f", conversionConfig.UseCustomEncodingSettings ? conversionConfig.CustomContainerName : "mov"
         };
-        // if (conversionConfig.OutputAudio)
-        //     argsList.InsertRange(17,"-map", "0:a:0");
-        
+        if (conversionConfig.OutputAudio)
+        {
+            argsList.InsertRange(argsList.IndexOf("-map"), "-map", "0:a:0");
+            argsList.InsertRange(argsList.IndexOf("-c:v"), "-c:a", conversionConfig.CodecAudio);
+        }
+
         argsList.Add(outputVideoFullFilename);
         
         var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg, argsList)
         {
             CreateNoWindow = true,
             UseShellExecute = false,
-            RedirectStandardOutput = true,
-            //RedirectStandardError = true
+            RedirectStandardOutput = true
         };
             
         try

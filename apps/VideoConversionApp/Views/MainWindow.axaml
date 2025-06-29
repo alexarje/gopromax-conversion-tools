@@ -109,7 +109,7 @@
           <v:RenderQueueView DataContext="{Binding RenderQueueViewModel}" 
             Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" />
           
-          <v:RenderProcessControlView 
+          <v:RenderProcessControlView  DataContext="{Binding RenderProcessControlViewModel}"
             Grid.Row="1" Grid.Column="0" /> 
            
         </Grid>

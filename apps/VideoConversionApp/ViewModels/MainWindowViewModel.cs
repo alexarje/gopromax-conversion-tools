@@ -19,6 +19,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public partial RenderSettingsViewModel? RenderSettingsViewModel { get; set; }
     [ObservableProperty]
     public partial RenderQueueViewModel? RenderQueueViewModel { get; set; }
+    [ObservableProperty]
+    public partial RenderProcessControlViewModel? RenderProcessControlViewModel { get; set; }
     
     public MainWindowViewModel(IServiceProvider? serviceProvider)
     {
@@ -26,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ConversionPreviewViewModel = serviceProvider?.GetRequiredService<ConversionPreviewViewModel>();
         RenderSettingsViewModel = serviceProvider?.GetRequiredService<RenderSettingsViewModel>();
         RenderQueueViewModel = serviceProvider?.GetRequiredService<RenderQueueViewModel>();
+        RenderProcessControlViewModel = serviceProvider?.GetRequiredService<RenderProcessControlViewModel>();
         
         if (Design.IsDesignMode)
         {
@@ -34,6 +37,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 null!, null!, null!, new BitmapCache(), ConversionPreviewViewModel);
             RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!, null!, null!);
             RenderQueueViewModel = new RenderQueueViewModel(null!, null!, new BitmapCache(), null!);
+            RenderProcessControlViewModel = new RenderProcessControlViewModel();
         }
     }
     

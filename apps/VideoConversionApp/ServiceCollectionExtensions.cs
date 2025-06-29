@@ -28,5 +28,6 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<ConversionPreviewViewModel>();
         collection.AddSingleton<RenderSettingsViewModel>();
         collection.AddSingleton<RenderQueueViewModel>();
+        collection.AddSingleton<RenderProcessControlViewModel>();
     }
 }
