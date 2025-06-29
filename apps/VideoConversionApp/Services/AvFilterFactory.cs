@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Avalonia.Platform;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
@@ -17,9 +19,14 @@ public class AvFilterFactory : IAvFilterFactory
 
     public AvFilterFactory()
     {
-        using var resourceStream = AssetLoader.Open(
-            new Uri("avares://VideoConversionApp/Resources/transform-template.avfilter"));
-        using var reader = new StreamReader(resourceStream);
+        // using var resourceStream = AssetLoader.Open(
+        //     new Uri("avares://VideoConversionApp/Resources/transform-template.avfilter"));
+        var assembly = GetType().Assembly;
+        var filter = assembly
+            .GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("transform-template.avfilter"));
+        var resourceStream = assembly.GetManifestResourceStream(filter!);
+        using var reader = new StreamReader(resourceStream!);
         _avFilterTemplate = reader.ReadToEnd();
     }
     

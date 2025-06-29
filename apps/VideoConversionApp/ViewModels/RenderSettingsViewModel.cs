@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -42,6 +37,12 @@ public partial class RenderSettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial string CustomAudioCodecName { get; set; }
     [ObservableProperty]
+    public partial string CustomContainerName { get; set; }
+    [ObservableProperty]
+    public partial uint CustomResolutionWidth { get; set; }
+    [ObservableProperty]
+    public partial uint CustomResolutionHeight { get; set; }
+    [ObservableProperty]
     public partial string FilenamePattern { get; set; } = "%o";
     [ObservableProperty]
     public partial string FilenamePatternIssues { get; set; }
@@ -51,6 +52,8 @@ public partial class RenderSettingsViewModel : ViewModelBase
     public partial ObservableCollection<CodecEntry>? AudioCodecs { get; set; }
     [ObservableProperty]
     public partial ObservableCollection<CodecEntry>? VideoCodecs { get; set; }
+    [ObservableProperty]
+    public partial ObservableCollection<CodecEntry>? Containers { get; set; }
 
     private bool _eventsEnabled = true;
     
@@ -104,12 +107,12 @@ public partial class RenderSettingsViewModel : ViewModelBase
         if (IsOtherVideoCodecSelected && VideoCodecs == null)
             RefreshCodecLists();
         
+        _configManager.GetConfig<ConversionConfig>()!.UseCustomEncodingSettings = IsOtherVideoCodecSelected;
         _configManager.GetConfig<ConversionConfig>()!.CodecVideo = value switch
         {
-            "VcProres" => "prores",
-            "VcDnxhd" => "dnxhd",
-            "VcCineform" => "cfhd",
-            _ => CustomVideoCodecName
+            "VcProres" => "prores", // MOV container
+            "VcCineform" => "cfhd", // MOV container
+            _ => CustomVideoCodecName 
         };
     }
 
@@ -159,6 +162,27 @@ public partial class RenderSettingsViewModel : ViewModelBase
         FilenamePatternIssues = string.IsNullOrWhiteSpace(FilenamePattern) ? "Filename pattern is empty" : "";
     }
 
+    partial void OnCustomContainerNameChanged(string value)
+    {
+        if (!_eventsEnabled) return;
+        
+        _configManager.GetConfig<ConversionConfig>()!.CustomContainerName = value;
+    }
+
+    partial void OnCustomResolutionHeightChanged(uint value)
+    {
+        if (!_eventsEnabled) return;
+        
+        _configManager.GetConfig<ConversionConfig>()!.CustomResolutionHeight = value;
+    }
+
+    partial void OnCustomResolutionWidthChanged(uint value)
+    {
+        if (!_eventsEnabled) return;
+        
+        _configManager.GetConfig<ConversionConfig>()!.CustomResolutionWidth = value;
+    }
+
     private void PopulateFromConfig(ConversionConfig config)
     {
         _eventsEnabled = false;
@@ -168,10 +192,13 @@ public partial class RenderSettingsViewModel : ViewModelBase
 
         CustomVideoCodecName = config.CodecVideo;
         CustomAudioCodecName = config.CodecAudio;
+        CustomContainerName = config.CustomContainerName;
+        CustomResolutionWidth = config.CustomResolutionWidth;
+        CustomResolutionHeight = config.CustomResolutionHeight;
+        
         SelectedVideoCodecTab = config.CodecVideo switch
         {
             "prores" => "VcProres",
-            "dnxhd" => "VcDnxhd",
             "cfhd" => "VcCineform",
             _ => "VcOther"
         };
@@ -182,8 +209,11 @@ public partial class RenderSettingsViewModel : ViewModelBase
             "" => "AcNone",
             _ => "AcOther"
         };
-        IsOtherVideoCodecSelected = SelectedVideoCodecTab == "VcOther";
+        IsOtherVideoCodecSelected = SelectedVideoCodecTab == "VcOther" || config.UseCustomEncodingSettings;
         IsOtherAudioCodecSelected = SelectedAudioCodecTab == "AcOther";
+        
+        if (config.UseCustomEncodingSettings)
+            SelectedVideoCodecTab = "VcOther";
         
         // Enable events since there are some checks there
         _eventsEnabled = true;
@@ -197,6 +227,7 @@ public partial class RenderSettingsViewModel : ViewModelBase
     {
         VideoCodecs = new ObservableCollection<CodecEntry>(_converterService.GetAvailableVideoCodecs().Where(x => x.EncodingSupported));
         AudioCodecs = new ObservableCollection<CodecEntry>(_converterService.GetAvailableAudioCodecs().Where(x => x.EncodingSupported));
+        Containers = new ObservableCollection<CodecEntry>(_converterService.GetAvailableContainers().Where(x => x.EncodingSupported));
     }
 
     [RelayCommand]

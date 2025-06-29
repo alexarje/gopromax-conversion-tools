@@ -30,9 +30,13 @@ $(basename "$0") -i <input_filepath> [-d <out_dir> | -n <out_filepath>] [-f]
       flag. If not set and a file with the exported filename already exists,
       a new file will be created with a '.<n>' extension.
   -v: Video codec name to use when rendering output. Run 'ffmpeg -codecs'
-      to view list of possibly supported codecs. Optional.
+      to view list of possibly supported codecs.
+      Optional, defaults to 'prores'
   -a: Audio codec name to use when rendering output. Run 'ffmpeg -codecs'
-      to view list of possibly supported codecs. Optional.
+      to view list of possibly supported codecs.
+      Optional, defaults to 'pcm_s16le'
+  -k: Container format to use. For example 'mov' or 'mp4' or 'matroska'.
+      Optional, defaults to 'mov'
   -x: Orientation (yaw, pitch, roll) in format <yaw>:<pitch>:<roll> in
       degrees. This will change in which angle the output equirectangular 
       video gets rendered. Optional.
@@ -48,7 +52,7 @@ EOF
 }
 
 
-while getopts 'hi:d:n:fv:a:cpx:s:t:' optchar; do
+while getopts 'hi:d:n:fv:a:k:cpx:s:t:' optchar; do
   case "$optchar" in
     i) input_file="$OPTARG" ;;
     d) output_dir="$OPTARG" ;;
@@ -56,6 +60,7 @@ while getopts 'hi:d:n:fv:a:cpx:s:t:' optchar; do
     f) output_overwrite=true ;;
     v) codec_video="$OPTARG" ;;
     a) codec_audio="$OPTARG" ;;
+    k) container_fmt="$OPTARG" ;;
     s) start_time="$OPTARG" ;;
     t) to_time="$OPTARG" ;;
     c) use_confirm=true ;;
@@ -112,14 +117,14 @@ inputfile_name="${input_file##*/}"
 inputfile_base_name="${inputfile_name%.*}"
 
 if [ -z "${output_filepath}" ]; then  
-  output_filepath="${output_dir}/${inputfile_base_name}.mov"
+  output_filepath="${output_dir}/${inputfile_base_name}.mp4"
   if [ "$output_overwrite" == true ] && [ -f $output_filepath ]; then
     output_filepath_overwrite=true
   else    
     idx=1
     while [ -f $output_filepath ]; do
       idx=$(( $idx+1 ))
-      output_filepath="${output_dir}/${inputfile_base_name}.${idx}.mov"
+      output_filepath="${output_dir}/${inputfile_base_name}-${idx}.mp4"
     done
   fi
 fi
@@ -138,6 +143,9 @@ orientation_roll=${orientation_roll:-'0'}
 # Video and audio codecs
 codec_video=${codec_video:-'prores'}
 codec_audio=${codec_audio:-'pcm_s16le'}
+
+# Container format
+container_fmt=${container_fmt:-'mov'}
 
 # Start and end time (cropping)
 start_time=${start_time:-'00:00:00.00'}
@@ -181,7 +189,7 @@ avfilter="${avfilter/PARAM_PITCH/$orientation_pitch}" || exit 1
 avfilter="${avfilter/PARAM_ROLL/$orientation_roll}" || exit 1
 
 ffmpeg -ss "${start_time}" -to "${to_time}" -i "${input_file}" -y -filter_complex "${avfilter}" -map "[OUTPUT_FRAME]" -map "0:a:0" \
-  -progress "${progress_target}" -c:v "${codec_video}" -c:a "${codec_audio}" "${output_filepath}"
+  -progress "${progress_target}" -c:v "${codec_video}" -c:a "${codec_audio}" -f "${container_fmt}" "${output_filepath}"
 
 [ $? -ne 0 ] && echo "Conversion failed, aborting." && exit 1
 

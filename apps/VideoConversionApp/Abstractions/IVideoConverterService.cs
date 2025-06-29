@@ -18,6 +18,7 @@ public interface IVideoConverterService
     
     IReadOnlyList<CodecEntry> GetAvailableVideoCodecs();
     IReadOnlyList<CodecEntry> GetAvailableAudioCodecs();
+    IReadOnlyList<CodecEntry> GetAvailableContainers();
     string GetFilenameFromPattern(IConvertableVideo video, string pattern);
     
     /// <summary>

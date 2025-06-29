@@ -19,6 +19,7 @@ public class VideoConverterService : IVideoConverterService
     private readonly IAvFilterFactory _avFilterFactory;
     private List<CodecEntry>? _ffmpegEncodingVideoCodecs;
     private List<CodecEntry>? _ffmpegEncodingAudioCodecs;
+    private List<CodecEntry>? _ffmpegEncodingContainers;
     
     public event EventHandler? RenderingQueueProcessingStarted;
     public event EventHandler? RenderingQueueProcessingFinished;
@@ -33,6 +34,77 @@ public class VideoConverterService : IVideoConverterService
     {
         _configManager = configManager;
         _avFilterFactory = avFilterFactory;
+    }
+
+    private void PopulateValidContainers()
+    {
+        var containers = new List<CodecEntry>();
+        
+        var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
+        var parseRegex = new Regex(
+            @"^\s(?<decode>[D\s])(?<encode>[E\s])(?<device>[d\s])\s(?<name>[\w,]*)\s*(?<desc>.*)$");
+        
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
+        [
+            "-formats"
+        ])
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardOutput = true
+        };
+        
+        try
+        {
+            var process = new Process()
+            {
+                StartInfo = processStartInfo,
+                EnableRaisingEvents = true
+            };
+            
+            process.Start();
+            process.BeginOutputReadLine();
+            process!.OutputDataReceived += (sender, args) =>
+            {
+                Console.WriteLine(args.Data);
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    var match = parseRegex.Match(args.Data);
+                    if (match.Success && match.Groups["device"].Value != "d" && match.Groups["encode"].Value != "E")
+                    {
+                        var aliases = match.Groups["name"].Value.Split(',');
+                        foreach (var name in aliases)
+                        {
+                            var c = new CodecEntry()
+                            {
+                                Name = name,
+                                Description = match.Groups["desc"].Value,
+                                DecodingSupported = match.Groups["decode"].Value == "D",
+                                EncodingSupported = true,
+                                IsAudio = false,
+                                IsVideo = false,
+                                IsLossy = false,
+                                IsLossless = false,
+                                IsContainer = true
+                            };
+                            containers.Add(c);
+                        }
+                    }
+                }
+            };
+            process!.WaitForExit();
+            if (process.ExitCode != 0)
+            {
+                throw new Exception("Process exited with exit code " + process.ExitCode);
+            }
+
+            _ffmpegEncodingContainers = containers;
+        }
+        catch (Exception e)
+        {
+            throw new Exception("Failed to iterate ffmpeg formats", e);
+        }
+        
     }
 
     private void PopulateValidCodecs()
@@ -118,13 +190,21 @@ public class VideoConverterService : IVideoConverterService
             PopulateValidCodecs();
         return _ffmpegEncodingAudioCodecs!;
     }
-    
-    //public string GetFilenameFromPattern(IInputVideoInfo inputVideoInfo, TimelineCrop crop, string pattern)
+
+    public IReadOnlyList<CodecEntry> GetAvailableContainers()
+    {
+        if (_ffmpegEncodingContainers == null)
+            PopulateValidContainers();
+        return _ffmpegEncodingContainers!;
+    }
+
     public string GetFilenameFromPattern(IConvertableVideo video, string pattern)
     {
         if (string.IsNullOrEmpty(pattern))
             throw new Exception("Filename pattern is empty");
-            
+
+        var timespanStringFormat = "hh\\-mm\\-ss";
+        
         var crop = video.TimelineCrop;
         var inputVideoInfo = video.InputVideoInfo;
         
@@ -133,18 +213,24 @@ public class VideoConverterService : IVideoConverterService
         {
             var startTime = crop.StartTimeSeconds;
             var endTime = crop.EndTimeSeconds ?? inputVideoInfo.DurationInSeconds;
-            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
-            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
+            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString(timespanStringFormat));
+            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString(timespanStringFormat));
         }
         else if (crop.EndTimeSeconds != null && crop.EndTimeSeconds > 0)
         {
             var startTime = crop.StartTimeSeconds ?? 0;
             var endTime = crop.EndTimeSeconds;
-            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString("hh\\-mm\\-ss"));
-            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString("hh\\-mm\\-ss"));
+            cropElems.Add(TimeSpan.FromSeconds((double)startTime).ToString(timespanStringFormat));
+            cropElems.Add(TimeSpan.FromSeconds((double)endTime).ToString(timespanStringFormat));
         }
         // e.g. 00-01-22.332__00-02-44.692
         var cropString = string.Join("__", cropElems);
+        if (cropString == "")
+        {
+            var startTime = TimeSpan.Zero.ToString(timespanStringFormat);
+            var endTime = TimeSpan.FromSeconds((double)video.InputVideoInfo.DurationInSeconds).ToString(timespanStringFormat);
+            cropString = $"{startTime}__{endTime}";
+        }
 
         var fn = Path.GetFileNameWithoutExtension(inputVideoInfo.Filename);
         var output = pattern.Replace("%o", fn)
@@ -264,25 +350,27 @@ public class VideoConverterService : IVideoConverterService
             : TimeSpan.Zero;
         var endTime = video.TimelineCrop.EndTimeSeconds != null
             ? TimeSpan.FromSeconds(Math.Round((double)video.TimelineCrop.EndTimeSeconds, 2))
-            : TimeSpan.Zero;
+            : TimeSpan.FromSeconds((double)video.InputVideoInfo.DurationInSeconds);
         var duration = endTime - startTime;
         
         var argsList = new List<string>
         {
-            "-loglevel", "8",
+            //"-loglevel", "48",
             "-y",
-            "-progress", "pipe:1",
-            "-stats_period", "0.25",
-            "-filter_complex", avFilterString,
             "-ss", startTime.ToString("c"),
             "-to", endTime.ToString("c"), 
             "-i", inputVideoInfo.Filename,
+            "-progress", "pipe:1",
+            "-stats_period", "1.0",
+            "-filter_complex", avFilterString,
+            "-map", "[OUTPUT_FRAME]",
             "-c:v", conversionConfig.CodecVideo,
             "-c:a", conversionConfig.CodecAudio,
-            "-map", "[OUTPUT_FRAME]"
+            "-f", "mov" // Has to be so at least with prores! The exit code is 234 - maybe if that happens, try another muxer. mp4 or mov.
+            // TODO take container type from config
         };
-        if (conversionConfig.OutputAudio)
-            argsList.AddRange("-map", "0:a:0");
+        // if (conversionConfig.OutputAudio)
+        //     argsList.InsertRange(17,"-map", "0:a:0");
         
         argsList.Add(outputVideoFullFilename);
         
@@ -290,7 +378,8 @@ public class VideoConverterService : IVideoConverterService
         {
             CreateNoWindow = true,
             UseShellExecute = false,
-            RedirectStandardOutput = true
+            RedirectStandardOutput = true,
+            //RedirectStandardError = true
         };
             
         try
@@ -306,17 +395,26 @@ public class VideoConverterService : IVideoConverterService
             process.BeginOutputReadLine();
             process!.OutputDataReceived += (sender, args) =>
             {
-                Console.WriteLine(args.Data);
-                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
+                try
                 {
-                    var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
-                    var progress = frameTime.TotalMilliseconds / duration.TotalMilliseconds;
-                    entry.Progress = Math.Min(Math.Round(progress * 100.0, 2), 99.0);
+                    Console.WriteLine(args.Data);
+                    if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
+                    {
+                        var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
+                        var progress = frameTime.TotalMilliseconds / duration.TotalMilliseconds;
+                        entry.Progress = Math.Min(Math.Round(progress * 100.0, 2), 99.0);
+                    }
+
+                    if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
+                    {
+                        entry.Progress = 99.0;
+                    }
                 }
-                if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
+                catch (Exception ex)
                 {
-                    entry.Progress = 99.0;
+                    Console.WriteLine(ex.Message);
                 }
+                
             };
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && File.Exists(outputVideoFullFilename))
@@ -354,7 +452,7 @@ public class VideoConverterService : IVideoConverterService
             }
             else
             {
-                Console.WriteLine(process.StandardError.ReadToEnd());
+                //Console.WriteLine(process.StandardError.ReadToEnd());
                 Console.WriteLine(process.ExitCode);
                 
                 throw new Exception($"Ffmpeg process returned {process.ExitCode}");
