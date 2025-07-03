@@ -338,8 +338,8 @@
                           <TextBlock Grid.Column="1" Grid.Row="5">
                             <TextBlock.Text>
                               <MultiBinding Converter="{StaticResource TimelineCropAsStringMultiConverter}" ConverterParameter="{x:False}">
-                                <Binding Source="{Binding Video.TimelineCrop}" />
-                                <Binding Source="{Binding Video.InputVideoInfo.DurationInSeconds}"></Binding>
+                                <Binding Path="Video.TimelineCrop" />
+                                <Binding Path="Video.InputVideoInfo.DurationInSeconds" />
                               </MultiBinding>
                             </TextBlock.Text>
                             
@@ -348,8 +348,8 @@
                           <TextBlock Grid.Column="1" Grid.Row="6">
                             <TextBlock.Text>
                               <MultiBinding Converter="{StaticResource TimelineCropAsStringMultiConverter}" ConverterParameter="{x:True}">
-                                <Binding Source="{Binding Video.TimelineCrop}" />
-                                <Binding Source="{Binding Video.InputVideoInfo.DurationInSeconds}"></Binding>
+                                <Binding Path="Video.TimelineCrop" />
+                                <Binding Path="Video.InputVideoInfo.DurationInSeconds" />
                               </MultiBinding>
                             </TextBlock.Text>
                           </TextBlock>

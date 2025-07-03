@@ -20,7 +20,7 @@ public class TimelineCropAsStringMultiConverter : IMultiValueConverter
             if (duration == 0)
                 return "";
 
-            if (parameter is string durationOnlyString && durationOnlyString == "true")
+            if (parameter is bool durationOnly && durationOnly == true)
                 return StringifyDuration(crop, duration);
             
             return StringifyStartEnd(crop, duration);
