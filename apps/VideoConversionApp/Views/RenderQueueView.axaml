@@ -28,7 +28,7 @@
     <converters:DateTimeAsLocalFormatConverter x:Key="DateTimeAsLocalFormatConverter" />
     <converters:BytesAsDataSizeStringConverter x:Key="BytesAsDataSizeStringConverter" />
     <converters:VideoOutputFilenameConverter x:Key="VideoOutputFilenameConverter"/>
-    <converters:TimelineCropAsStringConverter x:Key="TimelineCropAsStringConverter" />
+    <converters:TimelineCropAsStringMultiConverter x:Key="TimelineCropAsStringMultiConverter" />
     <converters:FilenameConverter x:Key="FilenameConverter" />
     <converters:EnumValueMatchConverter x:Key="EnumValueMatchConverter" />
     <converters:EnumValueNotMatchConverter x:Key="EnumValueNotMatchConverter" />
@@ -45,8 +45,21 @@
       <Setter Property="Foreground" Value="Firebrick"></Setter>
     </Style>
     <Style Selector="PathIcon.compact-rendering">
-      <Setter Property="Data" Value="{StaticResource caret_right_regular}"></Setter>
+      <Setter Property="Data" Value="{StaticResource spinner_ios_regular}"></Setter>
       <Setter Property="Foreground" Value="DeepSkyBlue"></Setter>
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="INFINITE">
+          <KeyFrame Cue="0%">
+            <Setter Property="RotateTransform.Angle" Value="0" />
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="RotateTransform.Angle" Value="180" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="RotateTransform.Angle" Value="359.9" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
     </Style>    
     <Style Selector="PathIcon.compact-queued">
       <Setter Property="Data" Value="{StaticResource keyboard_shift_uppercase_regular}"></Setter>
@@ -322,13 +335,24 @@
                           <TextBlock Grid.Column="0" Grid.Row="4">Orientation:</TextBlock>
                           <TextBlock Grid.Column="1" Grid.Row="4" Text="{Binding Video.FrameRotation}"></TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="5">Crop:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="5" 
-                            Text="{Binding Video,
-                            Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=false}"></TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="5">
+                            <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource TimelineCropAsStringMultiConverter}" ConverterParameter="{x:False}">
+                                <Binding Source="{Binding Video.TimelineCrop}" />
+                                <Binding Source="{Binding Video.InputVideoInfo.DurationInSeconds}"></Binding>
+                              </MultiBinding>
+                            </TextBlock.Text>
+                            
+                          </TextBlock>
                           <TextBlock Grid.Column="0" Grid.Row="6">Cropped duration:</TextBlock>
-                          <TextBlock Grid.Column="1" Grid.Row="6" 
-                            Text="{Binding Video,
-                            Converter={StaticResource TimelineCropAsStringConverter}, ConverterParameter=true}"></TextBlock>
+                          <TextBlock Grid.Column="1" Grid.Row="6">
+                            <TextBlock.Text>
+                              <MultiBinding Converter="{StaticResource TimelineCropAsStringMultiConverter}" ConverterParameter="{x:True}">
+                                <Binding Source="{Binding Video.TimelineCrop}" />
+                                <Binding Source="{Binding Video.InputVideoInfo.DurationInSeconds}"></Binding>
+                              </MultiBinding>
+                            </TextBlock.Text>
+                          </TextBlock>
                         </Grid>
                       </Border>
                       

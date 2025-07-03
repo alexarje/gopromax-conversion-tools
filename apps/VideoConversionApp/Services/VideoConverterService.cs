@@ -327,7 +327,15 @@ public class VideoConverterService : IVideoConverterService
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition(), rotation);
 
-        var outputVideoFullFilename = GetFilenameFromPattern(video, conversionConfig.OutputFilenamePattern) + ".mp4";
+        // Do this better later. Right now, the presets "prores" and "cfhd" render to mov container and
+        // bluntly assume the rest to be mp4...
+        var fileNameExtension = !conversionConfig.UseCustomEncodingSettings 
+            ? "mov" 
+            : conversionConfig.CustomContainerName == "mov" 
+                ? "mov" 
+                : "mp4";
+        
+        var outputVideoFullFilename = GetFilenameFromPattern(video, conversionConfig.OutputFilenamePattern) + $".{fileNameExtension}";
         if (conversionConfig.OutputBesideOriginals)
             outputVideoFullFilename = Path.Combine(Path.GetDirectoryName(video.InputVideoInfo.Filename)!, outputVideoFullFilename);
         else
@@ -355,7 +363,6 @@ public class VideoConverterService : IVideoConverterService
         
         var argsList = new List<string>
         {
-            //"-loglevel", "48",
             "-y",
             "-ss", startTime.ToString("c"),
             "-to", endTime.ToString("c"), 

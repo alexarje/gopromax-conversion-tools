@@ -7,7 +7,7 @@ public interface IConvertableVideo
 {
     public IInputVideoInfo InputVideoInfo { get; }
     public AvFilterFrameRotation FrameRotation { get; set; }
-    public TimelineCrop TimelineCrop { get; set; }
+    public TimelineCrop TimelineCrop { get; set; } // use observableprop
     public bool IsEnabledForConversion { get; set; }
     public bool HasNonDefaultSettings { get; }
     

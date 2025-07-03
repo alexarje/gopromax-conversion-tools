@@ -27,7 +27,7 @@
       <Panel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
           <Border BorderThickness="0 0 1 0" BorderBrush="Gray" VerticalAlignment="Center">
-            <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch">Media</TextBlock>
+            <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch" FontWeight="Bold" FontSize="15">Media</TextBlock>
           </Border>
           <Button Classes="basic-transparent"
             Command="{Binding AddFilesCommand}" ToolTip.Tip="Add files to media pool">

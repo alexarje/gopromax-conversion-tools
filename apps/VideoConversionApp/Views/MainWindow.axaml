@@ -8,6 +8,8 @@
   x:Class="VideoConversionApp.Views.MainWindow"
   x:DataType="vm:MainWindowViewModel"
   Title="VideoConversionApp"
+  Width="1910"
+  Height="1040"
   Name="AppMainWindow"
   Icon="/Images/360-icon.png">
 
@@ -99,7 +101,7 @@
         <!-- Content -->
         <Grid Name="RenderGrid" 
           ColumnDefinitions="4*, 10*" 
-          RowDefinitions="10*,4*">
+          RowDefinitions="12*,4*">
           
           <ScrollViewer Grid.Row="0" Grid.Column="0">
             <v:RenderSettingsView DataContext="{Binding RenderSettingsViewModel}" />

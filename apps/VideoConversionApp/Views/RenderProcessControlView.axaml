@@ -8,7 +8,12 @@
   x:DataType="vm:RenderProcessControlViewModel">
   
   <Design.DataContext>
-    <vm:RenderProcessControlViewModel></vm:RenderProcessControlViewModel>
+    <vm:RenderProcessControlViewModel>
+      <x:Arguments>
+        <x:Null></x:Null>
+        <x:Null></x:Null>
+      </x:Arguments>
+    </vm:RenderProcessControlViewModel>
   </Design.DataContext>
   
   <UserControl.Styles>
@@ -34,7 +39,7 @@
       <Panel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
           <Border VerticalAlignment="Center">
-            <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch">Process Control</TextBlock>
+            <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch" FontWeight="Bold" FontSize="15">Process Control</TextBlock>
           </Border>
         </StackPanel>
       </Panel>
@@ -52,15 +57,18 @@
                 <Setter Property="Padding" Value="8"></Setter>
               </Style>
             </StackPanel.Styles>
-            <Button IsEnabled="{Binding !IsRendering}">
+            <Button IsEnabled="{Binding !IsRendering}" 
+              Command="{Binding StartRenderingCommand}">
               <StackPanel Orientation="Horizontal">
                 <PathIcon Data="{StaticResource video_clip_regular}" Margin="0 0 8 0"
                   VerticalAlignment="Center" Foreground="Chartreuse" />
                 <TextBlock VerticalAlignment="Center">Render All</TextBlock>
               </StackPanel>
             </Button>
-            <Button IsEnabled="{Binding IsRendering}">Stop / Cancel</Button>
-            <Button IsEnabled="{Binding !IsRendering}">Reset Statuses</Button>
+            <Button IsEnabled="{Binding IsRendering}"
+              Command="{Binding StopRenderingCommand}">Stop / Cancel</Button>
+            <Button IsEnabled="{Binding !IsRendering}"
+              Command="{Binding ResetQueuedVideoStatusesCommand}">Reset Statuses</Button>
           </StackPanel>
         </Border>
         
@@ -87,12 +95,11 @@
             <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Elapsed}" />
             
             <TextBlock Grid.Row="2" Grid.Column="0">Processing:</TextBlock>
-            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
+            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" IsVisible="{Binding IsRendering}">
               <TextBlock Text="{Binding ProcessedCount}" />
               <TextBlock Margin="4 0">/</TextBlock>
               <TextBlock Text="{Binding QueueLength}" />
             </StackPanel>
-            
 
             <TextBlock Grid.Row="1" Grid.Column="4">Completed:</TextBlock>
             <TextBlock Grid.Row="1" Grid.Column="6" Text="{Binding SucceededCount}" />

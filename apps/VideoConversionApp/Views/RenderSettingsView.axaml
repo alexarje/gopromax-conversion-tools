@@ -22,7 +22,7 @@
       <Panel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
           <Border VerticalAlignment="Center">
-            <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch">Render Settings</TextBlock>
+            <TextBlock Margin="0 4 12 4" VerticalAlignment="Stretch" FontWeight="Bold" FontSize="15">Render Settings</TextBlock>
           </Border>
         </StackPanel>
       </Panel>

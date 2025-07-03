@@ -37,7 +37,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 null!, null!, null!, new BitmapCache(), ConversionPreviewViewModel);
             RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!, null!, null!);
             RenderQueueViewModel = new RenderQueueViewModel(null!, null!, new BitmapCache(), null!);
-            RenderProcessControlViewModel = new RenderProcessControlViewModel();
+            RenderProcessControlViewModel = new RenderProcessControlViewModel(null!, null!);
         }
     }
     
