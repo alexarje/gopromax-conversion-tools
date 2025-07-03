@@ -84,7 +84,10 @@ public partial class MediaSelectionViewModel : ViewModelBase
     {
         var match = VideoList.FirstOrDefault(x => x.LinkedVideo == video);
         if (match != null)
+        {
             VideoList.Remove(match);
+            match.PropertyChanged -= VideoOnPropertiesChanged;
+        }
     }
 
     partial void OnSortDescendingChanged(bool value)
@@ -128,8 +131,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
             if (videoInfo.IsValidVideo && videoInfo.IsGoProMaxFormat)
             {
                 video = _videoPoolManager.AddVideoToPool(videoInfo);
-                video.SettingsChanged += VideoOnConversionSettingsChanged;
-                video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
+                video.PropertyChanged += VideoOnPropertiesChanged;
             }
 
             var thumbViewModel = new VideoThumbViewModel
@@ -234,7 +236,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         return 0;
     }
 
-    private void VideoOnConversionSettingsChanged(object? sender, EventArgs e)
+    private void VideoOnPropertiesChanged(object? sender, EventArgs e)
     {
         var video = sender as IConvertableVideo;
         var videoThumbViewModel = VideoList.FirstOrDefault(x => x.LinkedVideo == video);
@@ -242,6 +244,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
             return;
 
         videoThumbViewModel.HasConversionSettingsModified = video!.HasNonDefaultSettings;
+        videoThumbViewModel.ShowAsSelectedForConversion = video!.IsEnabledForConversion;
     }
 
     [RelayCommand]

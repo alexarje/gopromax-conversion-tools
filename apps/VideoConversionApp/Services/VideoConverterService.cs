@@ -277,6 +277,7 @@ public class VideoConverterService : IVideoConverterService
                     continue;
                 }
                 
+                queueEntry.Errors = new string[0];
                 queueEntry.Progress = 0;
                 queueEntry.RenderingState = VideoRenderingState.Rendering;
                 await RenderVideo(queueEntry, queueEntry.CancellationTokenSource.Token);

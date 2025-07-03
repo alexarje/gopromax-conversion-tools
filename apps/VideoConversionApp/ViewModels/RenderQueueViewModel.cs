@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -117,7 +118,8 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     private void VideoPoolManagerOnVideoRemovedFromPool(object? sender, IConvertableVideo video)
     {
-        video.IsEnabledForConversionUpdated -= VideoOnIsEnabledForConversionUpdated;
+        video.PropertyChanged -= VideoOnPropertiesChanged;
+        // video.IsEnabledForConversionUpdated -= VideoOnIsEnabledForConversionUpdated;
         var queuedVideo = RenderQueue.FirstOrDefault(entry => entry.Video == video);
         if (queuedVideo != null)
             RenderQueue.Remove(queuedVideo);
@@ -125,8 +127,11 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     private void VideoPoolManagerOnVideoAddedToPool(object? sender, IConvertableVideo video)
     {
-        video.IsEnabledForConversionUpdated -= VideoOnIsEnabledForConversionUpdated;
-        video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
+        video.PropertyChanged -= VideoOnPropertiesChanged;
+        video.PropertyChanged += VideoOnPropertiesChanged;
+        //
+        // video.IsEnabledForConversionUpdated -= VideoOnIsEnabledForConversionUpdated;
+        // video.IsEnabledForConversionUpdated += VideoOnIsEnabledForConversionUpdated;
     }
 
     private Bitmap GetThumbForDesigner()
@@ -135,10 +140,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         return new Bitmap(defaultThumb);
     }
 
-    private void VideoOnIsEnabledForConversionUpdated(object? sender, bool enabled)
+    private void VideoOnPropertiesChanged(object? sender, PropertyChangedEventArgs e)
     {
         var video = (IConvertableVideo) sender!;
-        if (enabled && RenderQueue.All(entry => entry.Video != video))
+        if (e.PropertyName != nameof(IConvertableVideo.IsEnabledForConversion))
+            return;
+        
+        if (video.IsEnabledForConversion && RenderQueue.All(entry => entry.Video != video))
         {
             var newEntry = new VideoRenderQueueEntry(video)
             {
@@ -149,7 +157,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             RenderQueue.Add(newEntry);
         }
-        if (!enabled)
+        if (!video.IsEnabledForConversion)
         {
             var queuedVideo = RenderQueue.FirstOrDefault(entry => entry.Video == video);
             if (queuedVideo != null)

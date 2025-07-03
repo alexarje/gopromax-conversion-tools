@@ -2,65 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CommunityToolkit.Mvvm.ComponentModel;
 using VideoConversionApp.Abstractions;
 using VideoConversionApp.Models;
 
 namespace VideoConversionApp.Services;
 
-public class VideoPoolManager : IVideoPoolManager
+public partial class VideoPoolManager : IVideoPoolManager
 {
     /// <summary>
     /// Represents a video that is entered into VideoPoolManager and also managed by it.
     /// Hence, the class itself is hidden and the model is exposed just by its interface.
     /// Instances are created by VideoPoolManager.
     /// </summary>
-    private class ConvertableVideo : IConvertableVideo
+    private partial class ConvertableVideo : ObservableObject, IConvertableVideo
     {
-        public event EventHandler<AvFilterFrameRotation>? FrameRotationUpdated;
-        public event EventHandler<TimelineCrop>? TimelineCropUpdated;
-        public event EventHandler<bool>? IsEnabledForConversionUpdated;
-        public event EventHandler? SettingsChanged;
-
         public IInputVideoInfo InputVideoInfo { get; private set; }
-        public AvFilterFrameRotation FrameRotation
-        {
-            get => field;
-            set
-            {
-                if (value == field)
-                    return;
-                field = value;
-                FrameRotationUpdated?.Invoke(this, value);
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        public TimelineCrop TimelineCrop
-        {
-            get => field;
-            set
-            {
-                if (value == field)
-                    return;
-                field = value;
-                TimelineCropUpdated?.Invoke(this, value);
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        public bool IsEnabledForConversion
-        {
-            get => field;
-            set
-            {
-                if (value == field)
-                    return;
-                field = value;
-                IsEnabledForConversionUpdated?.Invoke(this, value);
-            }
-        } = false;
-
         
+        [ObservableProperty]
+        public partial AvFilterFrameRotation FrameRotation { get; set; }
+        [ObservableProperty]
+        public partial TimelineCrop TimelineCrop { get; set; }
+        [ObservableProperty]
+        public partial bool IsEnabledForConversion { get; set; }
+
         /// <summary>
         /// Returns true if this model's conversion settings have been modified.
         /// </summary>
@@ -83,13 +48,6 @@ public class VideoPoolManager : IVideoPoolManager
             TimelineCrop = new TimelineCrop();
         }
 
-        public void RemoveListeners()
-        {
-            SettingsChanged = null;
-            FrameRotationUpdated = null;
-            TimelineCropUpdated = null;
-            IsEnabledForConversionUpdated = null;
-        }
     }
 
     private class PlaceholderInputVideoInfo : IInputVideoInfo
@@ -165,7 +123,6 @@ public class VideoPoolManager : IVideoPoolManager
             throw new ArgumentException("Type mismatch");
         
         _convertibleVideoModels.Remove(v);
-        v.RemoveListeners();
         VideoRemovedFromPool?.Invoke(this, v);
     }
 

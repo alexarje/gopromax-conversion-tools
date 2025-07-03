@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoConversionApp", "Video
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoConversionApp.Tests", "..\VideoConversionApp.Tests\VideoConversionApp.Tests.csproj", "{5CA8ECE3-1B23-459B-9AF1-5118430EF206}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{4F89F508-F9EA-4C84-9DED-DE5C91048C32}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,9 +18,5 @@ Global
 		{5CA8ECE3-1B23-459B-9AF1-5118430EF206}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CA8ECE3-1B23-459B-9AF1-5118430EF206}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5CA8ECE3-1B23-459B-9AF1-5118430EF206}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4F89F508-F9EA-4C84-9DED-DE5C91048C32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4F89F508-F9EA-4C84-9DED-DE5C91048C32}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4F89F508-F9EA-4C84-9DED-DE5C91048C32}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4F89F508-F9EA-4C84-9DED-DE5C91048C32}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
