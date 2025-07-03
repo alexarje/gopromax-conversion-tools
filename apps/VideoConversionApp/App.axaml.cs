@@ -59,7 +59,7 @@ public partial class App : Application
             {
                 DataContext = vm
             };
-            ((StorageDialogProvider)services.GetRequiredService<IStorageDialogProvider>())
+            ((StorageServiceProvider)services.GetRequiredService<IStorageServiceProvider>())
                 .UseProviderWindow(desktop.MainWindow);
 
             desktop.MainWindow.Closing += (sender, args) =>
@@ -67,7 +67,7 @@ public partial class App : Application
                 configManager.SaveConfigurations(ConfigFilePath);
             };
         }
-
+        
         base.OnFrameworkInitializationCompleted();
     }
 

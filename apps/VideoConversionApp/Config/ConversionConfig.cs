@@ -22,6 +22,8 @@ public partial class ConversionConfig : ConfigurationObject<ConversionConfig>
     [ObservableProperty]
     public partial string OutputFilenamePattern { get; set; }
     [ObservableProperty]
+    public partial bool AllowOverwrite { get; set; }
+    [ObservableProperty]
     public partial bool UseCustomEncodingSettings { get; set; }
     [ObservableProperty]
     public partial string CustomContainerName { get; set; }
@@ -42,6 +44,7 @@ public partial class ConversionConfig : ConfigurationObject<ConversionConfig>
         CustomResolutionWidth = 1920;
         CustomResolutionHeight = 1080;
         CustomContainerName = "mov";
+        AllowOverwrite = true;
     }
     
     protected override void InitializeFrom(ConversionConfig? configuration)
@@ -59,5 +62,6 @@ public partial class ConversionConfig : ConfigurationObject<ConversionConfig>
         CustomResolutionWidth = configuration.CustomResolutionWidth;
         CustomResolutionHeight = configuration.CustomResolutionHeight;
         CustomContainerName = configuration.CustomContainerName;
+        AllowOverwrite = configuration.AllowOverwrite;
     }
 }

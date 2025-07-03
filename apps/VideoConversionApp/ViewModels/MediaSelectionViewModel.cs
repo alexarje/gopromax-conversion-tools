@@ -20,7 +20,7 @@ namespace VideoConversionApp.ViewModels;
 public partial class MediaSelectionViewModel : ViewModelBase
 {
     private readonly IVideoInfoService _videoInfoService;
-    private readonly IStorageDialogProvider _storageDialogProvider;
+    private readonly IStorageServiceProvider _storageServiceProvider;
     private readonly IVideoPreviewService _videoPreviewService;
     private readonly IVideoPoolManager _videoPoolManager;
     private readonly IBitmapCache _bitmapCache;
@@ -54,7 +54,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
     public MediaSelectionViewModel(
         IConfigManager configManager,
         IVideoInfoService videoInfoService, 
-        IStorageDialogProvider storageDialogProvider,
+        IStorageServiceProvider storageServiceProvider,
         IVideoPreviewService videoPreviewService,
         IVideoPoolManager videoPoolManager,
         IBitmapCache bitmapCache,
@@ -62,7 +62,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
     {
         _configManager = configManager;
         _videoInfoService = videoInfoService;
-        _storageDialogProvider = storageDialogProvider;
+        _storageServiceProvider = storageServiceProvider;
         _videoPreviewService = videoPreviewService;
         _videoPoolManager = videoPoolManager;
         _bitmapCache = bitmapCache;
@@ -113,7 +113,7 @@ public partial class MediaSelectionViewModel : ViewModelBase
         var videoType = new FilePickerFileType("GoPro MAX .360");
         videoType.Patterns = [".360"];
 
-        var selectedFiles = await _storageDialogProvider!.GetStorageProvider().OpenFilePickerAsync(new FilePickerOpenOptions()
+        var selectedFiles = await _storageServiceProvider!.GetStorageProvider().OpenFilePickerAsync(new FilePickerOpenOptions()
         {
             AllowMultiple = true,
             FileTypeFilter = [videoType]

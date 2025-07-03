@@ -345,7 +345,7 @@ public class VideoConverterService : IVideoConverterService
         if (outputVideoFullFilename == video.InputVideoInfo.Filename)
             throw new Exception("Output video filename is the same as the input video filename");
         
-        if (File.Exists(outputVideoFullFilename))
+        if (File.Exists(outputVideoFullFilename) && !conversionConfig.AllowOverwrite)
             throw new Exception("Output video file already exists");
         
         if (string.IsNullOrEmpty(conversionConfig.CodecVideo))

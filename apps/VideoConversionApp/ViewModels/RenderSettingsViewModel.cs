@@ -17,7 +17,7 @@ public partial class RenderSettingsViewModel : ViewModelBase
 {
     private readonly IVideoPoolManager _videoPoolManager;
     private readonly IVideoConverterService _converterService;
-    private readonly IStorageDialogProvider _storageDialogProvider;
+    private readonly IStorageServiceProvider _storageServiceProvider;
     private readonly IConfigManager _configManager;
 
     [ObservableProperty]
@@ -53,6 +53,8 @@ public partial class RenderSettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial string FilenamePreview { get; set; }
     [ObservableProperty]
+    public partial bool AllowOverwrite { get; set; }
+    [ObservableProperty]
     public partial ObservableCollection<CodecEntry>? AudioCodecs { get; set; }
     [ObservableProperty]
     public partial ObservableCollection<CodecEntry>? VideoCodecs { get; set; }
@@ -63,12 +65,12 @@ public partial class RenderSettingsViewModel : ViewModelBase
     
     public RenderSettingsViewModel(IVideoPoolManager videoPoolManager,
         IVideoConverterService converterService,
-        IStorageDialogProvider storageDialogProvider,
+        IStorageServiceProvider storageServiceProvider,
         IConfigManager configManager)
     {
         _videoPoolManager = videoPoolManager;
         _converterService = converterService;
-        _storageDialogProvider = storageDialogProvider;
+        _storageServiceProvider = storageServiceProvider;
         _configManager = configManager;
 
         if (Design.IsDesignMode)
@@ -187,6 +189,13 @@ public partial class RenderSettingsViewModel : ViewModelBase
         _configManager.GetConfig<ConversionConfig>()!.CustomResolutionWidth = value;
     }
 
+    partial void OnAllowOverwriteChanged(bool value)
+    {
+        if (!_eventsEnabled) return;
+        
+        _configManager.GetConfig<ConversionConfig>()!.AllowOverwrite = value;
+    }
+
     private void PopulateFromConfig(ConversionConfig config)
     {
         _eventsEnabled = false;
@@ -225,6 +234,7 @@ public partial class RenderSettingsViewModel : ViewModelBase
         SelectedOutputDirectoryMethod = config.OutputBesideOriginals ? "OutputToSameDir" : "OutputToSelectedDir";
         SelectedOutputDirectory = config.OutputDirectory;
         FilenamePattern = config.OutputFilenamePattern;
+        AllowOverwrite = config.AllowOverwrite;
     }
 
     public void RefreshCodecLists()
@@ -244,7 +254,7 @@ public partial class RenderSettingsViewModel : ViewModelBase
                 ? Path.GetDirectoryName(firstInputVideo.InputVideoInfo.Filename)
                 : null;
 
-        var storageProvider = _storageDialogProvider!.GetStorageProvider();
+        var storageProvider = _storageServiceProvider!.GetStorageProvider();
         var selectedDirectory = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
         {
             AllowMultiple = false,
@@ -257,6 +267,24 @@ public partial class RenderSettingsViewModel : ViewModelBase
         if (selectedDirectory.Count > 0)
             SelectedOutputDirectory = selectedDirectory[0].TryGetLocalPath()!;
         
+    }
 
+    [RelayCommand]
+    private void OpenOutputDirectory()
+    {
+        try
+        {
+            if (Directory.Exists(SelectedOutputDirectory))
+            {
+                var launcher = _storageServiceProvider!.GetLauncher();
+                launcher.LaunchUriAsync(new Uri(SelectedOutputDirectory));
+            }
+        }
+        catch (Exception)
+        {
+            
+        }
+        
+        
     }
 }

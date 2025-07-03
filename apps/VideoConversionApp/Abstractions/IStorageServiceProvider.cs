@@ -6,7 +6,8 @@ namespace VideoConversionApp.Abstractions;
 /// <summary>
 /// A helper for retrieving the Avalonia StorageProvider from ViewModels.
 /// </summary>
-public interface IStorageDialogProvider
+public interface IStorageServiceProvider
 {
     IStorageProvider GetStorageProvider();
+    ILauncher GetLauncher();
 }

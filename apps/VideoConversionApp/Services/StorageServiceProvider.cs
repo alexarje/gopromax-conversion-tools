@@ -6,11 +6,11 @@ using VideoConversionApp.Views;
 
 namespace VideoConversionApp.Services;
 
-public class StorageDialogProvider : IStorageDialogProvider
+public class StorageServiceProvider : IStorageServiceProvider
 {
     private Window? _providerWindow = null;
 
-    public StorageDialogProvider()
+    public StorageServiceProvider()
     {
     }
 
@@ -22,5 +22,10 @@ public class StorageDialogProvider : IStorageDialogProvider
     public IStorageProvider GetStorageProvider()
     {
         return TopLevel.GetTopLevel(_providerWindow)!.StorageProvider;
+    }
+
+    public ILauncher GetLauncher()
+    {
+        return TopLevel.GetTopLevel(_providerWindow)!.Launcher;
     }
 }
