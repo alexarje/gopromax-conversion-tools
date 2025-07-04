@@ -134,10 +134,10 @@ public partial class RenderSettingsViewModel : ViewModelBase
         {
             "AcPcms16le" => "pcm_s16le",
             "AcPcms32le" => "pcm_s32le",
-            "AcNone" => "",
-            _ => CustomVideoCodecName
+            "AcNoAudio" => "",
+            _ => CustomAudioCodecName
         };
-        _configManager.GetConfig<ConversionConfig>()!.OutputAudio = value != "AcNone";
+        _configManager.GetConfig<ConversionConfig>()!.OutputAudio = value != "AcNoAudio";
     }
 
     partial void OnCustomVideoCodecNameChanged(string value)
@@ -219,7 +219,7 @@ public partial class RenderSettingsViewModel : ViewModelBase
         {
             "pcm_s16le" => "AcPcms16le",
             "pcm_s32le" => "AcPcms32le",
-            "" => "AcNone",
+            "" => "AcNoAudio",
             _ => "AcOther"
         };
         IsOtherVideoCodecSelected = SelectedVideoCodecTab == "VcOther" || config.UseCustomEncodingSettings;

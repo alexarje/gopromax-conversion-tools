@@ -381,6 +381,11 @@ public class VideoConverterService : IVideoConverterService
             argsList.InsertRange(argsList.IndexOf("-c:v"), "-c:a", conversionConfig.CodecAudio);
         }
 
+        if (conversionConfig.UseCustomEncodingSettings)
+        {
+            argsList.AddRange(["-s", $"{conversionConfig.CustomResolutionWidth}x{conversionConfig.CustomResolutionHeight}"]);
+        }
+
         argsList.Add(outputVideoFullFilename);
         
         var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg, argsList)
