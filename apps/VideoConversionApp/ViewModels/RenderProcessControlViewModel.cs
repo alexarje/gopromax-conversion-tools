@@ -22,6 +22,8 @@ public partial class RenderProcessControlViewModel : ObservableObject
     [ObservableProperty]
     public partial uint ProcessedCount { get; set; }
     [ObservableProperty]
+    public partial uint ProcessingNum { get; set; }
+    [ObservableProperty]
     public partial uint FailedCount { get; set; }
     [ObservableProperty]
     public partial uint SucceededCount { get; set; }
@@ -41,7 +43,8 @@ public partial class RenderProcessControlViewModel : ObservableObject
         {
             IsRendering = true;
             Elapsed = TimeSpan.FromSeconds(95);
-            ProcessedCount = 1;
+            ProcessedCount = 0;
+            ProcessingNum = 1;
             FailedCount = 0;
             SucceededCount = 1;
             QueueLength = 4;
@@ -68,6 +71,7 @@ public partial class RenderProcessControlViewModel : ObservableObject
             _timer.Dispose();
         Elapsed = TimeSpan.Zero;
         ProcessedCount = 0;
+        ProcessingNum = 1;
         FailedCount = 0;
         SucceededCount = 0;
     }
@@ -75,6 +79,7 @@ public partial class RenderProcessControlViewModel : ObservableObject
     private void OnRenderingSucceeded(object? sender, VideoRenderQueueEntry e)
     {
         SucceededCount++;
+        ProcessingNum++;
         ProcessedCount++;
     }
 
@@ -82,12 +87,14 @@ public partial class RenderProcessControlViewModel : ObservableObject
     {
         FailedCount++;
         ProcessedCount++;
+        ProcessingNum++;
     }
 
     private void OnRenderingCanceled(object? sender, VideoRenderQueueEntry e)
     {
         FailedCount++;
         ProcessedCount++;
+        ProcessingNum++;
     }
 
     private void OnRenderingQueueProcessingFinished(object? sender, EventArgs e)

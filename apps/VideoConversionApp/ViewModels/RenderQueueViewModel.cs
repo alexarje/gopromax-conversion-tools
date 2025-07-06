@@ -201,19 +201,27 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     private void MoveUpQueueEntry(VideoRenderQueueEntry entry)
     {
+        var entryIndex = RenderQueue.IndexOf(entry);
+        if (entryIndex == 0)
+            return;
         
+        RenderQueue.Move(entryIndex, entryIndex - 1);
     }
     
     [RelayCommand]
     private void MoveDownQueueEntry(VideoRenderQueueEntry entry)
     {
+        var entryIndex = RenderQueue.IndexOf(entry);
+        if (entryIndex == RenderQueue.Count - 1)
+            return;
         
+        RenderQueue.Move(entryIndex, entryIndex + 1);
     }
     
     [RelayCommand]
     private void RemoveQueueEntry(VideoRenderQueueEntry entry)
     {
-        
+        entry.Video.IsEnabledForConversion = false;
     }
     
     [RelayCommand]

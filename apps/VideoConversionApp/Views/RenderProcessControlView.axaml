@@ -96,7 +96,7 @@
             
             <TextBlock Grid.Row="2" Grid.Column="0">Processing:</TextBlock>
             <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" IsVisible="{Binding IsRendering}">
-              <TextBlock Text="{Binding ProcessedCount}" />
+              <TextBlock Text="{Binding ProcessingNum}" />
               <TextBlock Margin="4 0">/</TextBlock>
               <TextBlock Text="{Binding QueueLength}" />
             </StackPanel>
