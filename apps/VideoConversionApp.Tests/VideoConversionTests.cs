@@ -1,3 +1,5 @@
+using Moq;
+using VideoConversionApp.Abstractions;
 using VideoConversionApp.Config;
 using VideoConversionApp.Models;
 using VideoConversionApp.Services;
@@ -24,13 +26,15 @@ public class VideoConversionTests
             poolManager.AddVideoToPool(maxVideo);
         }
         
+        var mockLogger = new Mock<ILogger>();
+        
         var configManager = new ConfigManager();
         configManager.LoadConfigurations("test.config");
         configManager.GetConfig<ConversionConfig>()!.OutputBesideOriginals = false;
         configManager.GetConfig<ConversionConfig>()!.OutputDirectory = tmpDir;
 
         var queueEntries = poolManager.VideoPool.Select(x => new VideoRenderQueueEntry(x)).ToList();
-        var conversionService = new VideoConverterService(configManager, filterFactory);
+        var conversionService = new VideoConverterService(configManager, filterFactory, mockLogger.Object);
         await conversionService.ConvertVideosAsync(queueEntries, true);
 
     }

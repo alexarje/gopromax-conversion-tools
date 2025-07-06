@@ -328,8 +328,6 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         }
         catch (Exception e)
         {
-            // TODO what to do
-            Console.WriteLine(e);
         }
 
     }
@@ -431,7 +429,6 @@ public partial class ConversionPreviewViewModel : ViewModelBase
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
         }
         
     }

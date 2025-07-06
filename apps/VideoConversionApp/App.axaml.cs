@@ -14,6 +14,7 @@ namespace VideoConversionApp;
 public partial class App : Application
 {
     private static string _configFilePath = null!;
+    public static ILogger? Logger = null;
 
     public static string ConfigFilePath
     {
@@ -51,7 +52,9 @@ public partial class App : Application
         var configManager = services.GetRequiredService<IConfigManager>();
         if(!configManager.LoadConfigurations(ConfigFilePath))
             configManager.SaveConfigurations(ConfigFilePath);
-        
+
+        Logger = services.GetRequiredService<ILogger>();
+        Logger.LogInformation("Application starting");
         var vm = services.GetRequiredService<MainWindowViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

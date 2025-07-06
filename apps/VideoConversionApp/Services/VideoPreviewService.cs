@@ -32,6 +32,7 @@ public class VideoPreviewService : IVideoPreviewService
 
     private IConfigManager _configManager;
     private readonly IAvFilterFactory _avFilterFactory;
+    private readonly ILogger _logger;
     private List<Thread> _thumbnailQueueProcessingThreads = new();
     private ConcurrentDictionary<string, byte[]> _thumbnailCache = new();
 
@@ -40,10 +41,12 @@ public class VideoPreviewService : IVideoPreviewService
 
     
     public VideoPreviewService(IConfigManager configManager,
-        IAvFilterFactory avFilterFactory)
+        IAvFilterFactory avFilterFactory,
+        ILogger logger)
     {
         _configManager = configManager;
         _avFilterFactory = avFilterFactory;
+        _logger = logger;
 
         CachePlaceholderThumbnail();
     }
@@ -165,6 +168,7 @@ public class VideoPreviewService : IVideoPreviewService
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation($"Generating snapshot frames for {inputVideo.Filename}");
         if (numberOfFrames < 2)
             throw new ArgumentException("Number of frames must be at least 2");
      
@@ -184,28 +188,29 @@ public class VideoPreviewService : IVideoPreviewService
         
         var tmpFrameFilePath = Path.Combine(tempPath, "snapshot-%06d.jpg");
 
-        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
-            [
-                "-loglevel", "8",
-                "-discard", "nokey",
-                "-y",
-                "-progress", "pipe:1",
-                "-stats_period", "0.25",
-                "-vsync", "0",
-                "-filter_complex", avFilterString,
-                "-i", inputVideo.Filename,
-                "-map", "[OUTPUT_FRAME]",
-                "-f", "image2",
-                "-s", "672x398",
-                tmpFrameFilePath
-            ])
+        var argsList = new List<string>
+        {
+            "-loglevel", "8",
+            "-discard", "nokey",
+            "-y",
+            "-progress", "pipe:1",
+            "-stats_period", "0.25",
+            "-vsync", "0",
+            "-filter_complex", avFilterString,
+            "-i", inputVideo.Filename,
+            "-map", "[OUTPUT_FRAME]",
+            "-f", "image2",
+            "-s", "672x398",
+            tmpFrameFilePath
+        };
+        _logger.LogVerbose($"ffmpeg args: {string.Join(" ", argsList)}");
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg, argsList)
             {
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
             
-        
         try
         {
             var process = new Process()
@@ -221,7 +226,7 @@ public class VideoPreviewService : IVideoPreviewService
 
             process!.OutputDataReceived += (sender, args) =>
             {
-                Console.WriteLine(args.Data);
+                _logger.LogVerbose(args.Data);
                 if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^frame=\d"))
                 {
                     var renderedFrameNumber = int.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
@@ -235,6 +240,7 @@ public class VideoPreviewService : IVideoPreviewService
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && Directory.Exists(tempPath))
             {
+                _logger.LogInformation($"Generated snapshot frames successfully");
                 var frames = Directory.GetFiles(tempPath, "*.jpg");
                 var frameBytes = new byte[frames.Length][];
 
@@ -248,21 +254,17 @@ public class VideoPreviewService : IVideoPreviewService
             }
             else
             {
-                Console.WriteLine(process.StandardError.ReadToEnd());
-                Console.WriteLine(process.ExitCode);
-                
                 throw new Exception($"Ffmpeg process returned {process.ExitCode}");
             }
         }
         catch (TaskCanceledException e)
         {
-            Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+            _logger.LogVerbose($"ffmpeg process cancelled: {e.Message}");
             throw;
         }
         catch (Exception e)
         {
-            // TODO handle this
-            Console.WriteLine("Exception: " + e.Message);
+            _logger.LogError($"Generating snapshot frames failed: {e}");
             throw;
         }
         
@@ -273,9 +275,11 @@ public class VideoPreviewService : IVideoPreviewService
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
-        var mediaInfo = video.InputVideoInfo;
+        var videoInfo = video.InputVideoInfo;
         var rotation = video.FrameRotation;
         var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
+        
+        _logger.LogInformation($"Generating keyframe video for {videoInfo.Filename}");
 
         var avFilterString = _avFilterFactory.BuildAvFilter(new AvFilterFrameSelectCondition()
         {
@@ -288,30 +292,31 @@ public class VideoPreviewService : IVideoPreviewService
         
         var tmpVideoFilePath = Path.Combine(tempPath, "keyframevideo.mp4");
 
-        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg,
-            [
-                "-loglevel", "8",
-                "-discard", "nokey",
-                "-y",
-                "-progress", "pipe:1",
-                "-stats_period", "0.25",
-                "-vsync", "0",
-                "-filter_complex", avFilterString,
-                "-i", mediaInfo.Filename,
-                "-map", "[OUTPUT_FRAME]",
-                "-c:v", "prores",
-                "-f", "mov",
-                "-s", "672x398",
-                "-movflags", "+faststart",
-                tmpVideoFilePath
-            ])
+        var argsList = new List<string>
+        {
+            "-loglevel", "8",
+            "-discard", "nokey",
+            "-y",
+            "-progress", "pipe:1",
+            "-stats_period", "0.25",
+            "-vsync", "0",
+            "-filter_complex", avFilterString,
+            "-i", videoInfo.Filename,
+            "-map", "[OUTPUT_FRAME]",
+            "-c:v", "prores",
+            "-f", "mov",
+            "-s", "672x398",
+            "-movflags", "+faststart",
+            tmpVideoFilePath
+        };
+        _logger.LogVerbose($"ffmpeg args: {string.Join(" ", argsList)}");
+        var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg, argsList)
             {
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
             
-        
         try
         {
             var process = new Process()
@@ -327,11 +332,11 @@ public class VideoPreviewService : IVideoPreviewService
 
             process!.OutputDataReceived += (sender, args) =>
             {
-                Console.WriteLine(args.Data);
+                _logger.LogVerbose(args.Data);
                 if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
                 {
                     var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
-                    var progress = frameTime.TotalMilliseconds / mediaInfo.DurationInSeconds.AsMillisecondsDouble();
+                    var progress = frameTime.TotalMilliseconds / videoInfo.DurationInSeconds.AsMillisecondsDouble();
                     progressCallback?.Invoke(Math.Round(progress * 100.0, 2));
                 }
                 if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^progress=end"))
@@ -342,6 +347,7 @@ public class VideoPreviewService : IVideoPreviewService
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && File.Exists(tmpVideoFilePath))
             {
+                _logger.LogInformation($"Generated keyframe video successfully, tagging video with exiftool");
                 var taggingProcessStartInfo = new ProcessStartInfo(pathsConfig.Exiftool,
                     [
                         "-api", "LargeFileSupport=1",
@@ -369,6 +375,7 @@ public class VideoPreviewService : IVideoPreviewService
                 progressCallback?.Invoke(100.0);
                 if (taggingProcess.ExitCode == 0)
                 {
+                    _logger.LogInformation($"Video tagged successfully");
                     return new KeyFrameVideo()
                     {
                         VideoPath = tmpVideoFilePath,
@@ -378,22 +385,18 @@ public class VideoPreviewService : IVideoPreviewService
                 throw new Exception($"ExifTool process returned {taggingProcess.ExitCode}");
             }
             else
-            {
-                Console.WriteLine(process.StandardError.ReadToEnd());
-                Console.WriteLine(process.ExitCode);
-                
+            {   
                 throw new Exception($"Ffmpeg process returned {process.ExitCode}");
             }
         }
         catch (TaskCanceledException e)
         {
-            Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+            _logger.LogVerbose($"ffmpeg process cancelled: {e.Message}");
             throw;
         }
         catch (Exception e)
         {
-            // TODO handle this
-            Console.WriteLine("Exception: " + e.Message);
+            _logger.LogError($"Generating keyframe video failed: {e}");
             throw;
         }
         

@@ -17,6 +17,7 @@ public class VideoConverterService : IVideoConverterService
 {
     private readonly IConfigManager _configManager;
     private readonly IAvFilterFactory _avFilterFactory;
+    private readonly ILogger _logger;
     private List<CodecEntry>? _ffmpegEncodingVideoCodecs;
     private List<CodecEntry>? _ffmpegEncodingAudioCodecs;
     private List<CodecEntry>? _ffmpegEncodingContainers;
@@ -30,10 +31,12 @@ public class VideoConverterService : IVideoConverterService
     private IList<VideoRenderQueueEntry>? _activeRenderingQueue;
     
     public VideoConverterService(IConfigManager configManager,
-        IAvFilterFactory avFilterFactory)
+        IAvFilterFactory avFilterFactory,
+        ILogger logger)
     {
         _configManager = configManager;
         _avFilterFactory = avFilterFactory;
+        _logger = logger;
     }
 
     private void PopulateValidContainers()
@@ -62,11 +65,12 @@ public class VideoConverterService : IVideoConverterService
                 EnableRaisingEvents = true
             };
             
+            _logger.LogVerbose("Populating valid video containers");
             process.Start();
             process.BeginOutputReadLine();
             process!.OutputDataReceived += (sender, args) =>
             {
-                Console.WriteLine(args.Data);
+                _logger.LogVerbose(args.Data);
                 if (!string.IsNullOrEmpty(args.Data))
                 {
                     var match = parseRegex.Match(args.Data);
@@ -95,6 +99,7 @@ public class VideoConverterService : IVideoConverterService
             process!.WaitForExit();
             if (process.ExitCode != 0)
             {
+                _logger.LogError($"{nameof(PopulateValidContainers)}: ffmpeg exited with code {process.ExitCode}");
                 throw new Exception("Process exited with exit code " + process.ExitCode);
             }
 
@@ -102,6 +107,7 @@ public class VideoConverterService : IVideoConverterService
         }
         catch (Exception e)
         {
+            _logger.LogError($"{nameof(PopulateValidContainers)}: failed to run ffmpeg -formats; {e}");
             throw new Exception("Failed to iterate ffmpeg formats", e);
         }
         
@@ -135,11 +141,12 @@ public class VideoConverterService : IVideoConverterService
                 EnableRaisingEvents = true
             };
             
+            _logger.LogVerbose("Populating valid video codecs");
             process.Start();
             process.BeginOutputReadLine();
             process!.OutputDataReceived += (sender, args) =>
             {
-                Console.WriteLine(args.Data);
+                _logger.LogVerbose(args.Data);
                 if (!string.IsNullOrEmpty(args.Data))
                 {
                     var match = codecParseRegex.Match(args.Data);
@@ -166,6 +173,7 @@ public class VideoConverterService : IVideoConverterService
             process!.WaitForExit();
             if (process.ExitCode != 0)
             {
+                _logger.LogError($"{nameof(PopulateValidCodecs)}: ffmpeg exited with code {process.ExitCode}");
                 throw new Exception("Process exited with exit code " + process.ExitCode);
             }
             _ffmpegEncodingAudioCodecs = audioCodecs;
@@ -173,6 +181,7 @@ public class VideoConverterService : IVideoConverterService
         }
         catch (Exception e)
         {
+            _logger.LogError($"{nameof(PopulateValidCodecs)}: failed to run ffmpeg -codecs; {e}");
             throw new Exception("Failed to iterate ffmpeg video codecs", e);
         }
     }
@@ -271,6 +280,7 @@ public class VideoConverterService : IVideoConverterService
                 
                 if (queueEntry.CancellationTokenSource.IsCancellationRequested)
                 {
+                    _logger.LogInformation($"Video rendering was cancelled for video {queueEntry.Video.InputVideoInfo.Filename}");
                     queueEntry.RenderingState = VideoRenderingState.Canceled;
                     RenderingCanceled?.Invoke(this, queueEntry);
                     allSuccessful = false;
@@ -293,6 +303,7 @@ public class VideoConverterService : IVideoConverterService
             }
             catch (Exception e)
             {
+                _logger.LogInformation($"Video rendering failed for video {queueEntry.Video.InputVideoInfo.Filename}, error: {e.Message}");
                 queueEntry.RenderingState = VideoRenderingState.CompletedWithErrors;
                 queueEntry.Errors = new []{ e.Message };
                 RenderingFailed?.Invoke(this, queueEntry);
@@ -302,6 +313,7 @@ public class VideoConverterService : IVideoConverterService
 
         _activeRenderingQueue = null;
         RenderingQueueProcessingFinished?.Invoke(this, EventArgs.Empty);
+        _logger.LogInformation($"Rendering queue processing finished");
         return allSuccessful;
     }
 
@@ -310,11 +322,13 @@ public class VideoConverterService : IVideoConverterService
         if (_activeRenderingQueue == null)
             return;
         
+        _logger.LogInformation($"Rendering queue cancellation signaled");
         _activeRenderingQueue.ToList().ForEach(entry => entry.CancellationTokenSource.Cancel());
     }
 
     public void SignalCancellation(VideoRenderQueueEntry renderQueueEntry)
     {
+        _logger.LogInformation($"Rendering cancellation signaled for video {renderQueueEntry.Video.InputVideoInfo.Filename}");
         renderQueueEntry.CancellationTokenSource.Cancel();
     }
 
@@ -322,6 +336,8 @@ public class VideoConverterService : IVideoConverterService
     {
         var video = entry.Video;
         var inputVideoInfo = video.InputVideoInfo;
+        _logger.LogInformation($"Rendering video {inputVideoInfo.Filename}");
+        
         var rotation = video.FrameRotation;
         var pathsConfig = _configManager.GetConfig<PathsConfig>()!;
         var conversionConfig = _configManager.GetConfig<ConversionConfig>()!;
@@ -342,6 +358,8 @@ public class VideoConverterService : IVideoConverterService
         else
             outputVideoFullFilename = Path.Combine(conversionConfig.OutputDirectory, outputVideoFullFilename);
 
+        _logger.LogInformation($"Output will be saved to {outputVideoFullFilename}");
+        
         if (outputVideoFullFilename == video.InputVideoInfo.Filename)
             throw new Exception("Output video filename is the same as the input video filename");
         
@@ -387,6 +405,7 @@ public class VideoConverterService : IVideoConverterService
         }
 
         argsList.Add(outputVideoFullFilename);
+        _logger.LogVerbose($"ffmpeg args: {string.Join(" ", argsList)}");
         
         var processStartInfo = new ProcessStartInfo(pathsConfig.Ffmpeg, argsList)
         {
@@ -402,6 +421,7 @@ public class VideoConverterService : IVideoConverterService
                 StartInfo = processStartInfo,
                 EnableRaisingEvents = true
             };
+            _logger.LogVerbose($"ffmpeg starting");
             process.Start();
             cancellationToken.Register(() => process.Kill());
 
@@ -410,7 +430,7 @@ public class VideoConverterService : IVideoConverterService
             {
                 try
                 {
-                    Console.WriteLine(args.Data);
+                    _logger.LogVerbose(args.Data);
                     if (!string.IsNullOrEmpty(args.Data) && Regex.IsMatch(args.Data, @"^out_time=\d"))
                     {
                         var frameTime = TimeSpan.Parse(args.Data.Split("=")[1], CultureInfo.InvariantCulture);
@@ -425,23 +445,25 @@ public class VideoConverterService : IVideoConverterService
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    _logger.LogWarning($"ffmpeg progress parsing error: {ex}");
                 }
                 
             };
             await process!.WaitForExitAsync(cancellationToken);
             if (process.ExitCode == 0 && File.Exists(outputVideoFullFilename))
             {
-                var taggingProcessStartInfo = new ProcessStartInfo(pathsConfig.Exiftool,
-                    [
-                        "-api", "LargeFileSupport=1",
-                        "-overwrite_original",
-                        "-XMP-GSpherical:Spherical=true",
-                        "-XMP-GSpherical:Stitched=true",
-                        "-XMP-GSpherical:StitchingSoftware=MAXVideoConvert",
-                        "-XMP-GSpherical:ProjectionType=equirectangular",
-                        outputVideoFullFilename
-                    ])
+                _logger.LogInformation($"Rendering completed successfully, tagging video with exiftool");
+                var exiftoolArgsList = new List<string>
+                {
+                    "-api", "LargeFileSupport=1",
+                    "-overwrite_original",
+                    "-XMP-GSpherical:Spherical=true",
+                    "-XMP-GSpherical:Stitched=true",
+                    "-XMP-GSpherical:StitchingSoftware=MAXVideoConvert",
+                    "-XMP-GSpherical:ProjectionType=equirectangular",
+                    outputVideoFullFilename
+                };
+                var taggingProcessStartInfo = new ProcessStartInfo(pathsConfig.Exiftool, exiftoolArgsList)
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false,
@@ -452,6 +474,7 @@ public class VideoConverterService : IVideoConverterService
                     StartInfo = taggingProcessStartInfo,
                     EnableRaisingEvents = true
                 };
+                _logger.LogVerbose($"exiftool args: {string.Join(" ", exiftoolArgsList)}");
                 taggingProcess.Start();
                 cancellationToken.Register(() => taggingProcess.Kill());
                 
@@ -459,27 +482,24 @@ public class VideoConverterService : IVideoConverterService
                 entry.Progress = 100.0;
                 if (taggingProcess.ExitCode == 0)
                 {
+                    _logger.LogInformation($"Video tagged successfully");
                     return;
                 }
                 throw new Exception($"ExifTool process returned {taggingProcess.ExitCode}");
             }
             else
             {
-                //Console.WriteLine(process.StandardError.ReadToEnd());
-                Console.WriteLine(process.ExitCode);
-                
                 throw new Exception($"Ffmpeg process returned {process.ExitCode}");
             }
         }
         catch (TaskCanceledException e)
         {
-            Console.WriteLine("Ffmpeg process cancellation: " + e.Message);
+            _logger.LogVerbose($"ffmpeg process cancelled: {e.Message}");
             throw;
         }
         catch (Exception e)
         {
-            // TODO handle this
-            Console.WriteLine("Exception: " + e.Message);
+            _logger.LogError($"Rendering failed: {e}");
             throw;
         }
     }
