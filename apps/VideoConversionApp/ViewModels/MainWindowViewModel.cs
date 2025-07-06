@@ -21,6 +21,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public partial RenderQueueViewModel? RenderQueueViewModel { get; set; }
     [ObservableProperty]
     public partial RenderProcessControlViewModel? RenderProcessControlViewModel { get; set; }
+    [ObservableProperty]
+    public partial GlobalSettingsViewModel? GlobalSettingsViewModel { get; set; }
     
     public MainWindowViewModel(IServiceProvider? serviceProvider)
     {
@@ -29,6 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RenderSettingsViewModel = serviceProvider?.GetRequiredService<RenderSettingsViewModel>();
         RenderQueueViewModel = serviceProvider?.GetRequiredService<RenderQueueViewModel>();
         RenderProcessControlViewModel = serviceProvider?.GetRequiredService<RenderProcessControlViewModel>();
+        GlobalSettingsViewModel = serviceProvider?.GetRequiredService<GlobalSettingsViewModel>();
         
         if (Design.IsDesignMode)
         {
@@ -38,6 +41,7 @@ public partial class MainWindowViewModel : ViewModelBase
             RenderSettingsViewModel = new RenderSettingsViewModel(null!, null!, null!, null!);
             RenderQueueViewModel = new RenderQueueViewModel(null!, null!, new BitmapCache(), null!);
             RenderProcessControlViewModel = new RenderProcessControlViewModel(null!, null!);
+            GlobalSettingsViewModel = new GlobalSettingsViewModel(null!);
         }
     }
     

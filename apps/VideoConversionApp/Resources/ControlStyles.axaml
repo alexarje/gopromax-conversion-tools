@@ -49,6 +49,9 @@
   <Style Selector="Border.pb-lbr">
     <Setter Property="BorderThickness" Value="1 0 1 1"></Setter>
   </Style>
+  <Style Selector="Border.pb-lr">
+    <Setter Property="BorderThickness" Value="1 0 1 0"></Setter>
+  </Style>
   <Style Selector="Border.pb-ltrb">
     <Setter Property="BorderThickness" Value="1 1 1 1"></Setter>
   </Style>

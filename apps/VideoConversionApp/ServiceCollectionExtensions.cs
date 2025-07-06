@@ -30,5 +30,6 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<RenderSettingsViewModel>();
         collection.AddSingleton<RenderQueueViewModel>();
         collection.AddSingleton<RenderProcessControlViewModel>();
+        collection.AddSingleton<GlobalSettingsViewModel>();
     }
 }

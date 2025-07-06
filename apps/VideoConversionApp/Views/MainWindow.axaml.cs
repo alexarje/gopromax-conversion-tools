@@ -8,6 +8,7 @@ public partial class MainWindow : Window
 {
     public MainWindow()
     {
+        Title = "MAX Video Converter - v" + GetType().Assembly.GetName().Version;
         InitializeComponent();
     }
 

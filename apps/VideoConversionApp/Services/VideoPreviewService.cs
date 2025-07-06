@@ -354,7 +354,7 @@ public class VideoPreviewService : IVideoPreviewService
                         "-overwrite_original",
                         "-XMP-GSpherical:Spherical=true",
                         "-XMP-GSpherical:Stitched=true",
-                        "-XMP-GSpherical:StitchingSoftware=MAXVideoConvert",
+                        "-XMP-GSpherical:StitchingSoftware=MAXVideoConverter",
                         "-XMP-GSpherical:ProjectionType=equirectangular",
                         tmpVideoFilePath
                     ])

@@ -7,7 +7,6 @@
   mc:Ignorable="d" d:DesignWidth="1600" d:DesignHeight="800"
   x:Class="VideoConversionApp.Views.MainWindow"
   x:DataType="vm:MainWindowViewModel"
-  Title="VideoConversionApp"
   Width="1910"
   Height="1040"
   Name="AppMainWindow"
@@ -139,7 +138,9 @@
           </DataTemplate>
         </TabItem.HeaderTemplate>
         <!-- Content -->
-        <TextBlock>Here be dragons</TextBlock>
+        <Grid>
+          <v:GlobalSettingsView DataContext="{Binding GlobalSettingsViewModel}" />
+        </Grid>
       </TabItem>
     </TabControl>
     
