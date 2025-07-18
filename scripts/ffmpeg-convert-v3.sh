@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-# Note: this script is a derivative of the https://github.com/slackspace-io/gopro-max-video-tools 
+# Note v3: this script is a derivative of this script: https://github.com/Jusas/gopromax-conversion-tools
+# modified to save Matroska files with H.264 codec support and preserve the original audio codec.
+#
+# Note v2: this script is a derivative of the https://github.com/slackspace-io/gopro-max-video-tools 
 # 'ffmpeg-convert.sh' script, modified to be more verbose in comments and accepting more 
 # versatile input parameters.
 #
@@ -21,22 +24,22 @@ $(basename "$0") -i <input_filepath> [-d <out_dir> | -n <out_filepath>] [-f]
 
   -h: Show this help.
   -i: Input video (.360) filename. Required.
-  -d: Output directory, create if not exist. Optional, defaults to current 
-      directory.
+  -d: Output directory, create if not exist. Optional, defaults to source 
+      file directory.
   -n: Output filepath, specify exact path with filename for the output.
-      Optional, by default using output directory and the same base
-      filename for output with .mov extension.
+      Optional, by default using source file directory and the same base
+      filename for output with .mkv extension.
   -f: Force overwriting output filepath, if file already exists. Optional 
       flag. If not set and a file with the exported filename already exists,
       a new file will be created with a '.<n>' extension.
   -v: Video codec name to use when rendering output. Run 'ffmpeg -codecs'
       to view list of possibly supported codecs.
-      Optional, defaults to 'prores'
+      Optional, defaults to 'libx264'
   -a: Audio codec name to use when rendering output. Run 'ffmpeg -codecs'
       to view list of possibly supported codecs.
       Optional, defaults to 'pcm_s16le'
   -k: Container format to use. For example 'mov' or 'mp4' or 'matroska'.
-      Optional, defaults to 'mov'
+      Optional, defaults to 'matroska'
   -x: Orientation (yaw, pitch, roll) in format <yaw>:<pitch>:<roll> in
       degrees. This will change in which angle the output equirectangular 
       video gets rendered. Optional.
@@ -110,21 +113,21 @@ if [ ! -z "${output_dir}" ] && [ ! -d "${output_dir}" ]; then
 fi
 
 if [ -z "${output_filepath}" ] && [ -z "${output_dir}" ]; then
-  output_dir="."
+  output_dir="$(dirname "$input_file")"
 fi
 
 inputfile_name="${input_file##*/}"
 inputfile_base_name="${inputfile_name%.*}"
 
 if [ -z "${output_filepath}" ]; then  
-  output_filepath="${output_dir}/${inputfile_base_name}.mp4"
+  output_filepath="${output_dir}/${inputfile_base_name}.mkv"
   if [ "$output_overwrite" == true ] && [ -f $output_filepath ]; then
     output_filepath_overwrite=true
   else    
     idx=1
     while [ -f $output_filepath ]; do
       idx=$(( $idx+1 ))
-      output_filepath="${output_dir}/${inputfile_base_name}-${idx}.mp4"
+      output_filepath="${output_dir}/${inputfile_base_name}-${idx}.mkv"
     done
   fi
 fi
@@ -141,13 +144,13 @@ orientation_pitch=${orientation_pitch:-'0'}
 orientation_roll=${orientation_roll:-'0'}
 
 # Video and audio codecs
-codec_video=${codec_video:-'prores'}
+codec_video=${codec_video:-'libx264'}
 codec_audio=${codec_audio:-'pcm_s16le'}
 
 # Container format
-container_fmt=${container_fmt:-'mov'}
+container_fmt=${container_fmt:-'matroska'}
 
-# Start and end time (cropping)
+# Start and end time (trimming)
 start_time=${start_time:-'00:00:00.00'}
 to_time=${to_time:-'99:00:00.00'}
 
@@ -188,7 +191,7 @@ avfilter="${avfilter/PARAM_YAW/$orientation_yaw}" || exit 1
 avfilter="${avfilter/PARAM_PITCH/$orientation_pitch}" || exit 1
 avfilter="${avfilter/PARAM_ROLL/$orientation_roll}" || exit 1
 
-ffmpeg -ss "${start_time}" -to "${to_time}" -i "${input_file}" -y -filter_complex "${avfilter}" -map "[OUTPUT_FRAME]" -map "0:a:0" \
+ffmpeg -ss "${start_time}" -to "${to_time}" -i "${input_file}" -y -filter_complex "${avfilter}" -map "[OUTPUT_FRAME]" -map 0:a \
   -progress "${progress_target}" -c:v "${codec_video}" -c:a "${codec_audio}" -f "${container_fmt}" "${output_filepath}"
 
 [ $? -ne 0 ] && echo "Conversion failed, aborting." && exit 1
