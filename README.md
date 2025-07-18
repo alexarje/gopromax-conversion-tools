@@ -9,13 +9,13 @@ A set of FFmpeg-based tools for converting GoPro MAX .360 videos to equirectangu
 - **Rotation Control**: 3D rotation support with X/Y/Z axes (pitch/yaw/roll)
 - **Choose Codecs**: Use any FFmpeg-supported containers and compression formats
 
-## 🛠️ Requirements
+## Requirements
 
 - **FFmpeg 7+** (automatically installed via static build)
 - **exiftool** (for metadata handling)
 - **bash** (for shell scripts)
 
-## 📦 Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -30,7 +30,7 @@ chmod +x *.sh
 
 3. The scripts will automatically install FFmpeg 7.0.2 static build on first run if needed.
 
-## 🚀 Usage
+## Usage
 
 ### Convert to Equirectangular (Standard 360° Video)
 
