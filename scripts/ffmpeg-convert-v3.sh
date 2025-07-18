@@ -43,6 +43,9 @@ $(basename "$0") -i <input_filepath> [-d <out_dir> | -n <out_filepath>] [-f]
   -x: Orientation (yaw, pitch, roll) in format <yaw>:<pitch>:<roll> in
       degrees. This will change in which angle the output equirectangular 
       video gets rendered. Optional.
+  -r: Rotation angles in format <x>:<y>:<z> in degrees for post-projection rotation.
+      X-axis (pitch), Y-axis (yaw), Z-axis (roll). For example, -r 0:0:90 
+      rotates the image 90 degrees clockwise around Z-axis. Optional.
   -s: Start time in timespan format, e.g. 00:00:12.34 - Optional
   -t: To time (end time) in timespan format, e.g. 00:01:40.55 - Optional
   -p: Show progress printouts in output (debug progress output). Adds the
@@ -55,7 +58,7 @@ EOF
 }
 
 
-while getopts 'hi:d:n:fv:a:k:cpx:s:t:' optchar; do
+while getopts 'hi:d:n:fv:a:k:cpx:s:t:r:' optchar; do
   case "$optchar" in
     i) input_file="$OPTARG" ;;
     d) output_dir="$OPTARG" ;;
@@ -69,6 +72,7 @@ while getopts 'hi:d:n:fv:a:k:cpx:s:t:' optchar; do
     c) use_confirm=true ;;
     p) log_progress=true ;;
     x) orientation_str="$OPTARG" ;;
+    r) rotation_angle="$OPTARG" ;;
     h|*) usage ;;
   esac 
 done
@@ -143,6 +147,25 @@ orientation_yaw=${orientation_yaw:-'0'}
 orientation_pitch=${orientation_pitch:-'0'}
 orientation_roll=${orientation_roll:-'0'}
 
+# Rotation angles (in degrees) - parse rotation parameter
+if [ ! -z "${rotation_angle}" ]; then
+  # Check if it's in the new format (x:y:z) or old format (single number)
+  if [[ "${rotation_angle}" == *":"* ]]; then
+    rotation_x=$(echo "$rotation_angle" | cut -d ':' -f 1)
+    rotation_y=$(echo "$rotation_angle" | cut -d ':' -f 2)
+    rotation_z=$(echo "$rotation_angle" | cut -d ':' -f 3)
+  else
+    # Backward compatibility - treat as Z-axis rotation only
+    rotation_x="0"
+    rotation_y="0"
+    rotation_z="${rotation_angle}"
+  fi
+else
+  rotation_x="0"
+  rotation_y="0"
+  rotation_z="0"
+fi
+
 # Video and audio codecs
 codec_video=${codec_video:-'libx264'}
 codec_audio=${codec_audio:-'pcm_s16le'}
@@ -190,6 +213,37 @@ avfilter=$(<"${scriptDir}/360.avfilter") || exit 1
 avfilter="${avfilter/PARAM_YAW/$orientation_yaw}" || exit 1
 avfilter="${avfilter/PARAM_PITCH/$orientation_pitch}" || exit 1
 avfilter="${avfilter/PARAM_ROLL/$orientation_roll}" || exit 1
+
+# Add rotation filters if any rotation angle is not 0
+if [ "${rotation_x}" != "0" ] || [ "${rotation_y}" != "0" ] || [ "${rotation_z}" != "0" ]; then
+  # Replace the final [OUTPUT_FRAME] with [PRE_ROTATE] and add rotation chain
+  avfilter="${avfilter/\[OUTPUT_FRAME\]/[PRE_ROTATE]}"
+  
+  current_input="PRE_ROTATE"
+  filter_chain=""
+  
+  # Apply rotations in XYZ order: X (pitch), Y (yaw), Z (roll)
+  # For X and Y axis rotation, we need to do a more complex transformation
+  # Convert back to 360, apply rotation, convert back to equirectangular
+  if [ "${rotation_x}" != "0" ] || [ "${rotation_y}" != "0" ]; then
+    # Calculate total additional rotation for X and Y
+    additional_pitch=$((${rotation_x} + 0))
+    additional_yaw=$((${rotation_y} + 0))
+    
+    # Apply additional 360 transformation with the extra rotation
+    filter_chain="${filter_chain};[${current_input}]v360=equirect:equirect:pitch=${additional_pitch}:yaw=${additional_yaw}:interp=cubic[ROTATE_XY]"
+    current_input="ROTATE_XY"
+  fi
+  
+  # Apply Z-axis rotation (simple 2D rotation) last
+  if [ "${rotation_z}" != "0" ]; then
+    filter_chain="${filter_chain};[${current_input}]rotate=${rotation_z}*PI/180:fillcolor=black[ROTATE_Z]"
+    current_input="ROTATE_Z"
+  fi
+  
+  # Add the filter chain and rename final output
+  avfilter="${avfilter}${filter_chain};[${current_input}]null[OUTPUT_FRAME]"
+fi
 
 ffmpeg -ss "${start_time}" -to "${to_time}" -i "${input_file}" -y -filter_complex "${avfilter}" -map "[OUTPUT_FRAME]" -map 0:a \
   -progress "${progress_target}" -c:v "${codec_video}" -c:a "${codec_audio}" -f "${container_fmt}" "${output_filepath}"
